@@ -57,6 +57,7 @@ class LocalMind(ctk.CTk):
         self.ctkapp_data.access_mode = access_mode
         self.initialize_settings()
         self.check_database()
+        self.init_database()
         self.initialize_ctk()
         self.initialize_widgets()
         time.sleep(2)
@@ -336,7 +337,7 @@ class LocalMind(ctk.CTk):
                     with open(instruction_file_path, 'w') as dst:
                         dst.write("# Instructions\n\n**Please open the localmind documentation file!**\n\n(It is <localmind install directory>\\docs\\localmind.md)")
             s = {
-                "title": self.title(),
+                "title": "LocalMind",
                 "virtual_env": path_to_python,
                 "database_path":self.ctkapp_data.database_path,
                 "instruction_file": str(instruction_file_path),
@@ -544,7 +545,7 @@ class LocalMind(ctk.CTk):
             1) Create it if it does not exist.
 
             2) Create the needed tables"""
-        
+       
         return
 
     def check_database(self) -> bool:
@@ -556,7 +557,9 @@ class LocalMind(ctk.CTk):
         result = True
         if self.ctkapp_data.database_path is None or self.ctkapp_data.database_path == "":
             database_path = self.exec_settings['database_path']
-            
+            if database_path is None or database_path == "":
+                database_path = str(self.users_home / "localmind.sqlite")
+                self.exec_settings['database_path'] = database_path
             self.ctkapp_data.database_path = database_path
         
         return result
