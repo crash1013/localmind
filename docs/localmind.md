@@ -23,8 +23,8 @@
 
 ## Tab Details
 
-| Tab Name | Description |
-| :---------- | :------- | :-------------- |
+| Tab Name | Description | 
+| :---------- | :-------------- |
 | Instructions | Documentation Viewer |
 | Settings | User interface configuration |
 | DatabaseManager | Create, databases and tables <br>Add/Remove tables and columns |
