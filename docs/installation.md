@@ -1,0 +1,3 @@
+# LocalMind Installation
+
+

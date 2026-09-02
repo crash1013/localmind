@@ -1,0 +1,10 @@
+customtkinter
+pillow
+pandas
+numpy
+matplotlib
+seaborn
+reportlab
+psutil
+pydantic
+pyodbc

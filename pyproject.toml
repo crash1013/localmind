@@ -1,0 +1,52 @@
+[project]
+name = "localmind"
+version = "0.1.0"
+description = "LocalMind — AI Workbench"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "Carl Rash" },
+]
+license = "MIT"
+keywords = ["llama.cpp", "gui", "llama-bench", "llama-server", "customtkinter"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Win32 (MS Windows)",
+  "Intended Audience :: Developers",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: User Interfaces",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+"customtkinter",
+"pillow",
+"pandas",
+"numpy",
+"matplotlib",
+"seaborn",
+"reportlab",
+"psutil",
+"pydantic",
+"pyodbc",
+"tkcalendar",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pandas-stubs",
+    "types-psutil",
+]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
