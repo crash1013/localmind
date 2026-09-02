@@ -8,8 +8,11 @@
 ## Content Table
 
 [Applying Filters, Compare Hosts Example](#applying-filters-compare-hosts-example)
+
 [Applying Filters, Compare Backend Example](#applying-filters-compare-backend-example)
+
 [Export PDF](#export-to-pdf)
+
 [Export Markdown](#export-to-markdown)
 
 
