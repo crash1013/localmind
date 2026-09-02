@@ -132,6 +132,24 @@ class LocalMindSettings:
             Returns True if initialization is successful, False otherwise."""
         
         result: bool = False
+        if not Path.exists(self._settings_path):
+            self._settings_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self._settings_path, "w", encoding="utf-8") as fp:
+                json.dump({
+                    "llama_exe_path": "",
+                    "llama_exe_paths": [
+                        "",
+                    ],
+                    "model_path": "",
+                    "models": [ "",
+                    ],
+                    "last_model": "",
+                    "api_key": "",
+                    "context_size": 4096,
+                    "host": "0.0.0.0",
+                    "port": 8081,
+                    "gpu_layers": "999"
+                }, fp)
         try:
             self.settings = LMSettings.model_validate(config_data)
             result = True
