@@ -40,7 +40,7 @@ There may be missing components in some Linux Distributions.
 
 For example if tkinter cannot be imported:
 
-If you need to update your python modules you should delete the environment `rm -rf .venv` and [rebuild it](#Create the virtual environment)
+If you need to update your python modules you should delete the environment `rm -rf .venv` and [rebuild it](#create-the-virtual-environment)
 
 Debian/Ubuntu 
 
