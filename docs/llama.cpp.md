@@ -1,103 +1,121 @@
-# Install and build llama.cpp
+# Building llama.cpp for LocalMind
 
-***
+LocalMind can use llama.cpp builds with CPU, SYCL, or Vulkan backends.
 
-Illama.cpp can be built to support various CPU/GPU/XPU hardware platforms. The hardware used to develop LocalMind is an Intel Arc Pro B70 on Windows and an Intel Arc B580 on Fedora Linux. SYCL or Vulkan flavors of llama.cpp work with these GPU's. Local mind provides a way to use both backends for server and benchmarking.
+The systems used during LocalMind development include:
 
-***
+| Platform | GPU | Backends |
+| :--- | :--- | :--- |
+| Windows | Intel Arc Pro B70 | SYCL, Vulkan |
+| Fedora Linux | Intel Arc B580 | SYCL, Vulkan |
 
-A script file is used to update the local GitHib repository then build and install the llama.cpp software into a location that can be used by localmind.
-The recommeneded location for these build scripts is <Users Home>\bin and it should be in the path for convenience.
+The examples in this document show how to clone, build, install, and configure llama.cpp for use with LocalMind. The supplied scripts are examples: paths, compiler versions, package names, and Linux prerequisites may need to be adapted for your system.
+
+## Recommended locations
+
+Keep the build scripts in a directory on your `PATH` so they are easy to run.
 
 **Linux**
-/home/<user id>/bin/ or /home/<user id>/.local/bin
+
+```text
+/home/<user>/.local/bin
+```
+
+or:
+
+```text
+/home/<user>/bin
+```
 
 **Windows**
-C:\Users\<user id>\bin\
 
-## Requirements:
+```text
+C:\Users\<user>\bin
+```
 
-### Sofware Tools
+---
 
-* [Git](https://git-scm.com/install/windows)
-* [CMake](https://cmake.org/download/)
-* [Visual Studio (Community)](https://visualstudio.microsoft.com/vs/community/)
-* [Intel oneAPI for SYCL build](https://www.intel.com/content/www/us/en/developer/tools/oneapi/oneapi-toolkit-download.html)
-* [Vulkan SDK for Vulkan build](https://vulkan.lunarg.com/sdk/home)
+## Common requirements
 
-### Software Notes
+### Software
 
-| Tool | Notes |
-| :--- | :---- |
-| C/C++ Compiler | You can use MSVC/LLVM/GCC/ICX for all CMAKE presets<br>The compiler is selected specifing CMAKE_C_COMPILER and CMAKE_CXX_COMPILER.<br>I recommend using the default compiler for the selected cmake preset. |
+- [llama.cpp](https://github.com/ggml-org/llama.cpp)
+- [Git](https://git-scm.com/)
+- [CMake](https://cmake.org/download/)
+- [Visual Studio Community](https://visualstudio.microsoft.com/vs/community/) for the Windows MSVC build
+- [Intel oneAPI Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/oneapi-toolkit-download.html) for SYCL builds
+- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) for Vulkan builds
 
-* When installing oneAPI be sure to install both "Intel oneAPI Toolkit" and "Intel Deep Learning Essentials".
-* I recommend using the default installation settings for all packages.
- 
+When installing oneAPI, use the default installation settings unless you have a specific reason to change them. LocalMind development systems also include Intel Deep Learning Essentials.
 
 ### Hardware
 
-* Any CPU/GPU/XPU supported by llama.cpp
+Any CPU, GPU, or XPU supported by llama.cpp can be used. The examples here focus on Intel Arc GPUs.
 
-## Example build scripts
+---
 
-There are a number of CMAKE presets available, Localmind was developed using the SYCL and Vulkan release versions.
+## Clone llama.cpp
 
-Available configure presets:
+Choose a working directory and clone the repository.
 
-  "x64-linux-gcc-debug"
-  "x64-linux-gcc-release"
-  "x64-linux-gcc-reldbg"
-  "x64-linux-gcc+static-release"
-  "arm64-windows-llvm-debug"
-  "arm64-windows-llvm-release"
-  "arm64-windows-llvm+static-release"
-  "arm64-apple-clang-debug"
-  "arm64-apple-clang-release"
-  "arm64-apple-clang+static-release"
-  "x64-windows-llvm-debug"
-  "x64-windows-llvm-release"
-  "x64-windows-llvm-reldbg"
-  "x64-windows-llvm+static-release"
-  "x64-windows-msvc-debug"
-  "x64-windows-msvc-release"
-  "x64-windows-msvc+static-release"
-  "x64-windows-sycl-debug"
-  "x64-windows-sycl-debug-f16"
-  **"x64-windows-sycl-release"**
-  "x64-windows-sycl-release-f16"
-  "x64-windows-vulkan-debug"
-  **"x64-windows-vulkan-release"**
+### Windows
 
-You can use these batch/shell script files you must modify these directory names to match your installation choices.
+```cmd
+set WORKDIR=E:\work
+cd /d %WORKDIR%
+git clone https://github.com/ggml-org/llama.cpp.git
+```
 
-| Script Variable | Description |
-| :-------------- | :---------- |
-| REPO_PATH | The path to the cloned llama.cpp repository |
-| BUILD_DIR | The build directory within the cloned repository |
-| INSTALL_PREFIX | The directory where you want llama.cpp to be installed |
-| ONEAPI_VARS | The path to the script that sets the environment for Intel oneAPI |
-| CMAKE_PRESET | The CMAKE preset |
+### Linux
 
-The steps required to build llama.cpp in a command prompt after all prerequisite software has been installed.
+```bash
+mkdir -p ~/work
+cd ~/work
+git clone https://github.com/ggml-org/llama.cpp.git
+```
 
-1. Change the working directory to the location where you want to install the git repository.
-2. Clone the repository: `git clone https://github.com/ggml-org/llama.cpp.git`
-3. Change the directory to the repository. 
-3. Execute the CMAKE commands as shown in the following scripts.
-4. Configure localmind to use the newly built llama.cpp: 
+---
 
-You can select multiple llama.cpp installations in the LMSettings tab. Select them one at a time using the "Browse Executable Paths" button. Each time a path is selected the list of compiler executable lists is appended with the newly specified path.
+# Windows builds
 
-![Select llama.cpp install path(s)](./images/llama-exe1.png)
+The Windows examples use llama.cpp CMake presets.
 
+To see the presets available in your current checkout:
 
+```cmd
+cmake --list-presets
+```
 
-### Vulkan Build for Windows, using the Microsoft Visual Studio Compiler
+The LocalMind development builds use:
 
-- Requires Vulkan SDK and Visual Studio
+- `x64-windows-vulkan-release`
+- `x64-windows-sycl-release`
 
-```BATCH
+The scripts below update the local llama.cpp checkout, configure the requested backend, build it, and install the result into a stable location that LocalMind can reference.
+
+## Common script variables
+
+| Variable | Description |
+| :--- | :--- |
+| `REPO_PATH` | Path to the cloned llama.cpp repository |
+| `BUILD_DIR` | Build directory within the repository |
+| `INSTALL_PREFIX` | Destination for the installed llama.cpp build |
+| `ONEAPI_VARS` | Intel oneAPI environment setup script |
+| `CMAKE_PRESET` | CMake preset used for the build |
+
+---
+
+## Windows Vulkan build
+
+**Requires:**
+
+- Visual Studio
+- Vulkan SDK
+- CMake
+
+Example build script:
+
+```batch
 @echo off
 setlocal EnableExtensions
 
@@ -105,7 +123,9 @@ set "REPO_PATH=E:\work\llama.cpp"
 set "BUILD_DIR=build-x64-windows-vulkan-release"
 set "INSTALL_PREFIX=C:\llama-vulkan-release"
 set "CMAKE_PRESET=x64-windows-vulkan-release"
-set "SCRIPT_DIR=%~dp0"
+
+set "VS_VARS=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
+
 
 echo [INFO] Navigating to "%REPO_PATH%"
 cd /D "%REPO_PATH%" || goto :error
@@ -114,8 +134,6 @@ if not exist "CMakeLists.txt" (
     echo [ERROR] Could not find llama.cpp source at "%REPO_PATH%"
     goto :error
 )
-
-set "VS_VARS=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Auxiliary\Build\vcvars64.bat"
 
 if exist "%VS_VARS%" (
     echo [INFO] Initializing Visual Studio MSVC environment...
@@ -136,14 +154,9 @@ cmake --preset "%CMAKE_PRESET%" || goto :error
 echo [INFO] Building...
 cmake --build "%BUILD_DIR%" --config Release -j || goto :error
 
-echo [INFO] Deleting install directory
-set TARGET_DIR="%INSTALL_PREFIX"
-if exist %TARGET_DIR% (
-    echo Deleting %TARGET_DIR%...
-    rd /s /q %TARGET_DIR%
-    echo Done.
-) else (
-    echo Directory does not exist. Skipping.
+echo [INFO] Deleting install directory...
+if exist "%INSTALL_PREFIX%" (
+    rd /s /q "%INSTALL_PREFIX%"
 )
 
 echo [INFO] Creating install directory...
@@ -169,11 +182,18 @@ pause
 exit /b 1
 ```
 
-### SYCL Build for Windows using Intel compilers.
+---
 
-- Requires Intel oneAPI
+## Windows SYCL build
 
-```BATCH
+**Requires:**
+
+- Intel oneAPI
+- CMake
+
+Example build script:
+
+```batch
 @echo off
 setlocal EnableExtensions
 
@@ -183,7 +203,6 @@ set "INSTALL_PREFIX=C:\llama-sycl-release"
 set "ONEAPI_VARS=C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
 set "CMAKE_PRESET=x64-windows-sycl-release"
 
-set "SCRIPT_DIR=%~dp0"
 
 echo [INFO] Navigating to "%REPO_PATH%"
 cd /D "%REPO_PATH%" || goto :error
@@ -214,7 +233,8 @@ git pull --rebase || goto :error
 
 echo [INFO] Configuring with "%CMAKE_PRESET%" preset...
 cmake --preset "%CMAKE_PRESET%" ^
-	  -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icx || goto :error
+    -DCMAKE_C_COMPILER=icx ^
+    -DCMAKE_CXX_COMPILER=icx || goto :error
 
 echo [INFO] Building...
 cmake --build "%BUILD_DIR%" --config Release -j || goto :error
@@ -240,27 +260,85 @@ cd
 echo.
 pause
 exit /b 1
-
 ```
 
-Linux SYCL build
+---
 
-When building for Linux I recommend installing oneAPI using the default package manager, apt or dnf. This allows the packages to be updated as your system updates are installed.
+# Linux builds
 
-For Vulkan on Linux: [Getting Started with the Linux Tarball Vulkan SDK](https://vulkan.lunarg.com/doc/view/latest/linux/getting_started.html)  
+Linux builds require more attention to distribution-specific prerequisites than Windows builds. Ubuntu and Fedora are the primary Linux families used during LocalMind development and testing.
 
-The SYCL build script for Linux. 
-A preset was not used. Be sure to change the compilers to gcc or llvm if not building for SYCL.
+Install compiler and SDK packages using the distribution package manager where practical. This makes future updates easier to manage through normal system updates.
 
+## Linux SYCL prerequisites
 
-```BASH
+For SYCL builds, install Intel oneAPI using the package manager for your distribution.
+
+After installation, the oneAPI setup script is normally located at:
+
+```text
+/opt/intel/oneapi/setvars.sh
+```
+
+You can verify the installation with:
+
+```bash
+source /opt/intel/oneapi/setvars.sh
+icx --version
+icpx --version
+sycl-ls
+```
+
+On systems with an Intel GPU, `sycl-ls` should list a GPU device through Level Zero and/or OpenCL.
+
+## Linux Vulkan prerequisites
+
+For the Vulkan SDK tarball installation, follow LunarG's current instructions:
+
+[Getting Started with the Linux Tarball Vulkan SDK](https://vulkan.lunarg.com/doc/view/latest/linux/getting_started.html)
+
+The SDK setup script should be sourced before configuring a Vulkan build so that `VULKAN_SDK`, `PATH`, `LD_LIBRARY_PATH`, `PKG_CONFIG_PATH`, and `CMAKE_PREFIX_PATH` are configured correctly.
+
+---
+
+## Linux SYCL build
+
+The Linux SYCL example does not use a CMake preset. It explicitly selects Intel's compilers and enables `GGML_SYCL`.
+
+The install library directory differs between common Linux families:
+
+- Debian/Ubuntu: `$HOME/.local/lib`
+- Fedora/RHEL: `$HOME/.local/lib64`
+
+Example build script:
+
+```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
 REPO="$HOME/work/llama.cpp"
 INSTALL_PREFIX="$HOME/.local"
 BUILD_DIR="build-sycl"
-LIB_DIR="$INSTALL_PREFIX/lib64"
+
+# Determine Linux distribution family and installation library directory.
+if [[ ! -r /etc/os-release ]]; then
+    echo "ERROR: Unable to determine Linux distribution."
+    exit 1
+fi
+
+. /etc/os-release
+
+if [[ "$ID" == "debian" || "$ID" == "ubuntu" || "${ID_LIKE:-}" == *debian* ]]; then
+    DISTRO_FAMILY="debian"
+    LIB_DIR="$INSTALL_PREFIX/lib"
+elif [[ "$ID" == "fedora" || "$ID" == "rhel" || "$ID" == "centos" || \
+        "${ID_LIKE:-}" == *fedora* || "${ID_LIKE:-}" == *rhel* ]]; then
+    DISTRO_FAMILY="redhat"
+    LIB_DIR="$INSTALL_PREFIX/lib64"
+else
+    echo "ERROR: Unsupported distribution: ${PRETTY_NAME:-unknown}"
+    exit 1
+fi
 
 cd "$REPO"
 
@@ -272,19 +350,33 @@ echo "[2/6] Cleaning old build..."
 rm -rf "$BUILD_DIR"
 
 echo "[3/6] Loading Intel oneAPI..."
-if [[ -f /opt/intel/oneapi/setvars.sh ]]; then
-    # Avoid noisy repeat initialization when possible
-    if [[ -z "${ONEAPI_ROOT:-}" ]]; then
-        set +u
-        source /opt/intel/oneapi/setvars.sh
-        set -u
-    else
-        echo "oneAPI already initialized: $ONEAPI_ROOT"
-    fi
+ONEAPI_SETUP="/opt/intel/oneapi/setvars.sh"
+
+if [[ -n "${ONEAPI_ROOT:-}" ]]; then
+    echo "oneAPI already initialized: $ONEAPI_ROOT"
+elif [[ -f "$ONEAPI_SETUP" ]]; then
+    set +u
+    source "$ONEAPI_SETUP"
+    set -u
 else
-    echo "ERROR: /opt/intel/oneapi/setvars.sh not found"
+    echo "ERROR: oneAPI setup script not found:"
+    echo "  $ONEAPI_SETUP"
     exit 1
 fi
+
+if ! command -v icx >/dev/null 2>&1; then
+    echo "ERROR: icx not found after loading oneAPI."
+    exit 1
+fi
+
+if ! command -v icpx >/dev/null 2>&1; then
+    echo "ERROR: icpx not found after loading oneAPI."
+    exit 1
+fi
+
+echo
+echo "SYCL devices:"
+sycl-ls || true
 
 echo "[4/6] Configuring CMake..."
 cmake -B "$BUILD_DIR" \
@@ -300,16 +392,15 @@ cmake --build "$BUILD_DIR" --config Release -j"$(nproc)"
 echo "[6/6] Installing..."
 cmake --install "$BUILD_DIR"
 
-cd /home/crash/work/llama.cpp
-find build* -type f \( \
-  -name 'libllama*.so*' -o \
-  -name 'libggml*.so*' -o \
-  -name 'libmtmd*.so*' \
+mkdir -p "$LIB_DIR"
+
+find "$BUILD_DIR" -type f \( \
+    -name 'libllama*.so*' -o \
+    -name 'libggml*.so*' -o \
+    -name 'libmtmd*.so*' \
 \) -exec cp -av {} "$LIB_DIR" \;
 
-cd ~
 sudo ldconfig "$LIB_DIR"
-
 
 echo
 echo "Installed binaries should be under:"
@@ -317,16 +408,120 @@ echo "  $INSTALL_PREFIX/bin"
 echo
 echo "Version check:"
 "$INSTALL_PREFIX/bin/llama-server" --version || true
-
 ```
 
+### Ubuntu 24.04 / oneAPI host compiler note
 
+During Ubuntu 24.04 testing with oneAPI 2026.1, `icpx` may detect multiple GCC installations and fail with:
 
+```text
+icpx: error: C++ header location not resolved; check installed C++ dependencies
+```
 
+If GCC 13 is the complete host C++ toolchain, verify it directly:
 
+```bash
+icpx --gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13 \
+    /tmp/test.cpp -o /tmp/test
+```
 
+If this resolves the issue, pass the same GCC installation directory to CMake:
 
+```bash
+-DCMAKE_C_FLAGS="--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13" \
+-DCMAKE_CXX_FLAGS="--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13"
+```
 
+Only add these flags when needed; a normal oneAPI installation should not require them on every system.
 
+### WSL SYCL note
 
+On WSL, `sycl-ls` can be used to verify that the Intel GPU is visible to the oneAPI runtime. A working configuration should list a Level Zero GPU device, for example:
 
+```text
+[level_zero:gpu][level_zero:0] Intel(R) oneAPI Unified Runtime over Level-Zero V2, Intel(R) Graphics ...
+```
+
+A llama.cpp SYCL build may also emit a repeated warning similar to:
+
+```text
+Warning: zesInit failed [ggml_check_sycl] with code 2013265921.
+Sysman free-memory query may be unavailable.
+```
+
+This warning concerns the Level Zero Sysman path. GPU compute can still function, but the warning can make benchmark output difficult to read. For a known test run, `stderr` can be discarded:
+
+```bash
+llama-bench ... 2>/dev/null
+```
+
+This hides all standard-error output, including unrelated warnings and real errors, so use it only when appropriate.
+
+---
+
+# Verify the installation
+
+After installing a build, confirm that the expected executable is found and reports the intended compiler/backend build.
+
+### Windows
+
+```cmd
+C:\llama-vulkan-release\bin\llama-server --version
+C:\llama-sycl-release\bin\llama-server --version
+```
+
+### Linux
+
+If `$HOME/.local/bin` is not already on your `PATH`:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then:
+
+```bash
+llama-server --version
+```
+
+For a SYCL build, `llama-bench` with GPU offload provides a practical verification that the GPU backend is actually being used.
+
+---
+
+# Configure LocalMind
+
+After building llama.cpp, configure LocalMind to use the installed executable directories.
+
+Open the **LMSettings** tab and use **Browse Executable Paths** to add one or more llama.cpp installations. Each selected path is appended to the list of available compiler executable locations.
+
+Typical Windows locations are:
+
+```text
+C:\llama-vulkan-release\bin
+C:\llama-sycl-release\bin
+```
+
+A typical Linux location is:
+
+```text
+~/.local/bin
+```
+
+![Select llama.cpp install path(s)](./images/llama-exe1.png)
+
+---
+
+# Build workflow summary
+
+Once the prerequisite toolchains are installed, the recurring workflow is straightforward:
+
+1. Update the local llama.cpp repository.
+2. Remove or refresh the backend-specific build directory.
+3. Initialize the required compiler/SDK environment.
+4. Configure CMake for the desired backend.
+5. Build llama.cpp.
+6. Install the result into a stable location.
+7. Verify `llama-server --version` and, when appropriate, run `llama-bench`.
+8. Add the installed executable path to LocalMind.
+
+The supplied scripts automate these steps and can be adapted as toolchain versions, hardware, and llama.cpp itself evolve.
