@@ -132,7 +132,6 @@ endlocal
 
 For FedoraLinux using the SYCL backend on Intel GPU's
 
-If 
 
 ``` bash
 #!/usr/bin/env bash
