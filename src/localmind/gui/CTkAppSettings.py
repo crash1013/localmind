@@ -2,6 +2,8 @@
 
 import os
 import sys
+import subprocess
+
 from pathlib import Path
 import customtkinter as ctk # type: ignore
 from typing import List, Union, Tuple
@@ -166,11 +168,28 @@ class CTkAppSettings(CTkAppView):
         self.restart_app()
 
     def restart_app(self):
-        """Restart the current program."""
+        """Restart the current program without a console window."""
         p = self.parent.exec_settings.get('virtual_env', sys.executable)
         if not os.path.exists(p):
             p = sys.executable
-        os.execl(p, p, self.parent.script_path)
+
+        # Windows: use the window-less interpreter
+        if os.name == 'nt':
+            # sys.executable is ...\python.exe
+            if p.lower().endswith('python.exe'):
+                p = p[:-len('python.exe')] + 'pythonw.exe'
+            # Popen is needed because execl can't set window flags.
+            # CREATE_NO_WINDOW = 0x08000000
+            args = [p, self.parent.script_path] + sys.argv[1:]
+            subprocess.Popen(args,
+                            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000),
+                            close_fds=True,
+                            cwd=os.getcwd())
+            sys.exit(0)
+        else:
+            # POSIX - execl is fine
+            os.execl(p, p, self.parent.script_path)
+
 
     def on_configure_font(self):
         font = ctk.CTkFont(family = self.gui_settings['font']['family'],
