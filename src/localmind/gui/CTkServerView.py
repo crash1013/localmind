@@ -7,6 +7,7 @@ from typing import Union, Tuple, List, Any
 import subprocess
 import threading
 import copy 
+import os
 
 from localmind.widgets.CTkYesNo import CTkYesNo
 from localmind.gui.CTkAppData import CTkAppData
@@ -182,13 +183,15 @@ class CTkServerView(CTkAppView):
         start_message = f"Starting server:\n{' '.join(cmd)}\n\n"
         self.append_console(start_message)
         self.data.logger.info(start_message)
-
+        
+        hide_flag = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name=="nt" else 0
         self.process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
+            creationflags=hide_flag,
         )
         self.data.logger.debug(f"Popen started llama-server and returned: {type(self.process)}")
         

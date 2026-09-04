@@ -273,7 +273,7 @@ class CTkBenchmarkView(CTkAppView):
     def _benchmark_worker(self, cmd: list[str]) -> None:
         try:
             self.benchmark_output = ""
-
+            hide_flag = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name=="nt" else 0
             self.benchmark_process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -281,6 +281,7 @@ class CTkBenchmarkView(CTkAppView):
                 text=True,
                 bufsize=1,
                 env=os.environ.copy(),
+                creationflags=hide_flag,
             )
 
             assert self.benchmark_process.stdout is not None

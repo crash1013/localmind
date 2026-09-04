@@ -21,7 +21,7 @@ def get_llama_server_procs() -> list[psutil.Process]:
 
     return servers
 
-def kill_llama_servers(timeout: float = 5.0, logger: Logger | None = None) -> list[int]:
+def kill_llama_servers(timeout: float = 2.0, logger: Logger | None = None) -> list[int]:
     servers: list[psutil.Process] = []
 
     for proc in psutil.process_iter(["name"]):
@@ -34,20 +34,32 @@ def kill_llama_servers(timeout: float = 5.0, logger: Logger | None = None) -> li
                 if logger:
                     logger.info(f"Terminated llama-server process: {proc.pid}")
 
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            if logger:
-                logger.exception("Error while trying to terminate llama-server process.")
+        except psutil.NoSuchProcess:
             continue
 
+        except psutil.AccessDenied as exc:
+            if logger:
+                pid = getattr(proc, "pid", "unknown")
+                logger.warning(f"Permission denied terminating process {pid}: {exc}")
+            continue
+
+    if not servers:
+        return []
+    
     gone, alive = psutil.wait_procs(servers, timeout=timeout)
 
     for proc in alive:
         try:
             proc.kill()
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-        
-    if alive and logger:
+            if logger:
+                logger.warning(f"Force killed stubborn llama-server process: {proc.pid}")
+        except psutil.NoSuchProcess:
+            continue
+        except psutil.AccessDenied as exc:
+            if logger:
+                pid = getattr(proc, "pid", "unknown")
+                logger.error(f"Failed to force kill process {pid} (Access Denied): {exc}")        
+    if alive:
         psutil.wait_procs(alive, timeout=timeout)
 
     return [proc.pid for proc in servers]
