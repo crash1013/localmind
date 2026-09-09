@@ -5,15 +5,14 @@
 
 ![Analysis Tab](./images/Analysis-dark.png)
 
-## Content Table
+## Table of Contents
 
-[Applying Filters, Compare Hosts Example](#applying-filters-compare-hosts-example)
-
-[Applying Filters, Compare Backend Example](#applying-filters-compare-backend-example)
-
-[Export PDF](#export-to-pdf)
-
-[Export Markdown](#export-to-markdown)
+| **Section ** | **Description** | **Link** |
+| :----------- | :-------------- | :------- |
+| *Filters Compare Hosts* | A step by step example that demonstrates configuration for comparing hosts | [Compare Hosts Example](#applying-filters-compare-hosts-example) |
+| *Filters Compare Backends* | A step by step example that demonstrates configuration for comparing backends | [Compare Backend Example](#applying-filters-compare-backend-example) |
+| *Export PDF* | Export the current chart to PDF | [Export PDF](#export-to-pdf) |
+| *Export Markdown* | Export the current chart to markdown | [Export Markdown](#export-to-markdown) |
 
 
 ## Overview
@@ -32,7 +31,7 @@ Clicking the *Filters* button opens the Filter Dialog Window
 
 ### Applying Filters, Compare Hosts Example
 
-[Back to Content](#content-table)
+[Back to Content](#table-of-contents)
 
 **Please Note, before any benchmark runs the database will be empty and this is where we obtain the filter content. No filter content will be displayed**
 
@@ -103,7 +102,7 @@ As you can see the performance is much closer on the Generation test.
 
 ### Applying Filters, Compare Backend Example
 
-[Back to Content](#content-table)
+[Back to Content](#table-of-contents)
 
 
 For this example we want to compare the two backends SYCL and Vulkan to each other on the Ryzen9x670 host.
@@ -138,7 +137,7 @@ Graph results can be exported to either a PDF document or a Markdown document.
 
 ### Export to PDF
 
-[Back to Content](#content-table)
+[Back to Content](#table-of-contents)
 
 - Click the Export button on the sidebar.
 - Select PDF if not selected.
@@ -155,12 +154,12 @@ If the 'Open PDF after generation' option was selected you will see a preview of
 
 ![Analysis Export PDF Preview](./images/analysis-export-pdf-preview.png)
 
-[Back to Content](#content-table)
+[Back to Content](#table-of-contents)
 
 
 ### Export to Markdown
 
-[Back to Content](#content-table)
+[Back to Content](#table-of-contents)
 
 - Click the Export button on the sidebar.
 - Select Markdown.
@@ -173,6 +172,6 @@ If the 'Open PDF after generation' option was selected you will see a preview of
 
 ![Markdown Preview](./images/analysis-export-markdown-preview.png)
 
-[Back to Content](#content-table)
+[Back to Content](#table-of-contents)
 
 

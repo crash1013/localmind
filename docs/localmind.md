@@ -23,26 +23,15 @@
 
 ## Tab Details
 
-| Tab Name | Description | 
-| :---------- | :-------------- |
-| Instructions | Documentation Viewer |
-| Settings | User interface configuration |
-| DatabaseManager | Create, databases and tables <br>Add/Remove tables and columns |
-| LMSettings | Configure common llama-server settings |
-| LMServer | Run the selected model with the selected llama-server backend |
-| Bencmark | Benchmark models using wih the selected llama-bench backend |
-| Analysis | Graphically compare performance and characteristics of benchmark data captured in the benchmark database |
-
-
-
-
-* [Instructions](./instructions.md)
-* [Settings](./settings.md)
-* [DatabaseManager](./DatabaseManager.md)
-* [LMSettings](./LMSettings.md)
-* [LMServer](./LMServer.md)
-* [Benchmark](./Benchmark.md)
-* [Analysis](./Analysis.md)
+| Tab Name | Description | Details | 
+| :---------- | :-------------- | :---------- |
+| Instructions | Documentation Viewer | [Instructions](./instructions.md) |
+| Settings | User interface configuration | [Settings](./settings.md) |
+| DatabaseManager | Create, databases and tables <br>Add/Remove tables and columns | [DatabaseManager](./DatabaseManager.md) |
+| LMSettings | Configure common llama-server settings | [LMSettings](./LMSettings.md) |
+| LMServer | Run the selected model with the selected llama-server backend | [LMServer](./LMServer.md) |
+| Bencmark | Benchmark models using wih the selected llama-bench backend | [Benchmark](./Benchmark.md) |
+| Analysis | Graphically compare performance and characteristics of benchmark data captured in the benchmark database | [Analysis](./Analysis.md) |
 
 ***
 

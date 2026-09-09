@@ -7,7 +7,12 @@ Uses ctk.CTkTextbox with custom tags for better control and rendering.
     Modified _insert_table to use the font passed as a keyword to __init__
     Use the base font for headers and cells.
     Allowed <br> to create multiline wrapped text in each cell
-    Updated some type hints to make mypy happy.
+  
+2026-09-08, Carl Rash
+    Revised table implementation instead if using CTkLabel for the cell
+    we are using tkinter Text so we can resuse the tags defined for the main content.
+    this allows the table to contain formatted text, links, and other inline elements.
+    
 """
 
 import tkinter as tk
@@ -81,8 +86,11 @@ class CTkMarkdown(ctk.CTkTextbox):
         self._images: list[ctk.CTkImage]
 
         # self._setup_tags()
+        # 
         self._setup_theme_colors()
+        # inline tags are used with tables and the document
         self._setup_inline_tags(self._textbox)
+        # document tags are used for headings, blockquotes, lists, etc.
         self._setup_document_tags(self._textbox)
         try:
             ctk.AppearanceModeTracker.add(self._apply_theme, self)
@@ -305,108 +313,6 @@ class CTkMarkdown(ctk.CTkTextbox):
             'checkbox_pending',
             foreground=c['checkbox_pending']
         )
-
-    def _setup_tags(self):
-        """Configure formatting tags."""
-        base_font = tkfont.Font(font=self._textbox.cget('font'))
-        base_size = int(base_font.cget('size'))
-        base_family = base_font.cget('family')
-
-        self._theme_colors = {
-            'light': {
-                'heading_1': '#1a1a2e', 'heading_2': '#16213e', 'heading_3': '#1f4068',
-                'heading_4': '#1b1b2f', 'heading_5': '#464866', 'heading_6': '#6b778d',
-                'muted': '#6c757d', 'link': '#0d6efd',
-                'code_inline_fg': '#d63384', 'code_inline_bg': '#f6f8fa',
-                'code_block_fg': '#1f2328', 'code_block_bg': '#EEEEEE',
-                'code_keyword': '#0550ae', 'code_string': '#0a3069',
-                'code_comment': '#6e7781', 'code_number': '#953800',
-                'code_function': '#8250df', 'code_class': '#1f6feb',
-                'code_decorator': '#a371f7', 'code_operator': '#24292f',
-                'blockquote_fg': '#6c757d', 'blockquote_bg': '#f8f9fa',
-                'list_bullet': '#6c757d', 'list_number': '#0d6efd',
-                # 'hr': '#dee2e6',
-                'hr': '#495057',
-                'table_border': '#dee2e6',
-                'table_header_bg': '#e9ecef', 'table_header_fg': '#212529',
-                'table_cell_bg': '#ffffff', 'table_cell_fg': '#212529',
-                'table_row_alt_bg': '#f8f9fa',
-                'checkbox_done': '#198754', 'checkbox_pending': '#dc3545',
-                'copy_btn_bg': '#e9ecef', 'copy_btn_fg': '#495057',
-                'copy_btn_active_bg': '#198754', 'copy_btn_active_fg': '#ffffff',
-            },
-            'dark': {
-                'heading_1': '#e6edf3', 'heading_2': '#d1d9e0', 'heading_3': '#b6c2cf',
-                'heading_4': '#9fb0c2', 'heading_5': '#8b9bb0', 'heading_6': '#778899',
-                'muted': '#9aa0a6', 'link': '#4da3ff',
-                'code_inline_fg': '#ff7aa8', 'code_inline_bg': '#2b2b2b',
-                'code_block_fg': '#f0f6fc', 'code_block_bg': '#212121',
-                'code_keyword': '#569cd6', 'code_string': '#ce9178',
-                'code_comment': '#6a9955', 'code_number': '#b5cea8',
-                'code_function': '#dcdcaa', 'code_class': '#4ec9b0',
-                'code_decorator': '#c586c0', 'code_operator': '#d4d4d4',
-                'blockquote_fg': '#9aa0a6', 'blockquote_bg': '#20242a',
-                'list_bullet': '#9aa0a6', 'list_number': '#4da3ff',
-                # 'hr': '#30363d',
-                'hr': '#8b949e',
-                'table_border': '#30363d',
-                'table_header_bg': '#30363d', 'table_header_fg': '#e6edf3',
-                'table_cell_bg': '#0d1117', 'table_cell_fg': '#c9d1d9',
-                'table_row_alt_bg': '#161b22',
-                'checkbox_done': '#3fb950', 'checkbox_pending': '#ff7b72',
-                'copy_btn_bg': '#30363d', 'copy_btn_fg': '#8b949e',
-                'copy_btn_active_bg': '#238636', 'copy_btn_active_fg': '#ffffff',
-            }
-        }
-
-        self._textbox.tag_config('h1', font=('Segoe UI', base_size + 12, 'bold'), spacing1=20, spacing3=10)
-        self._textbox.tag_config('h2', font=('Segoe UI', base_size + 8, 'bold'),  spacing1=18, spacing3=8)
-        self._textbox.tag_config('h3', font=('Segoe UI', base_size + 5, 'bold'),  spacing1=15, spacing3=6)
-        self._textbox.tag_config('h4', font=('Segoe UI', base_size + 3, 'bold'),  spacing1=12, spacing3=5)
-        self._textbox.tag_config('h5', font=('Segoe UI', base_size + 2, 'bold'),  spacing1=10, spacing3=4)
-        self._textbox.tag_config('h6', font=('Segoe UI', base_size + 1, 'bold'),  spacing1=8,  spacing3=3)
-
-        self._textbox.tag_config('bold',        font=(base_family, base_size, 'bold'))
-        self._textbox.tag_config('italic',      font=(base_family, base_size, 'italic'))
-        self._textbox.tag_config('bold_italic', font=(base_family, base_size, 'bold italic'))
-        self._textbox.tag_config('strikethrough', overstrike=True)
-        self._textbox.tag_config('underline',   underline=True)
-
-        self._textbox.tag_config('code_inline', font=('Consolas', base_size), spacing1=2)
-        self._textbox.tag_config('code_block',  
-                                 font=('Consolas', base_size),
-                                 spacing1=2, # changed from 10 to 2, to eliminate
-                                 spacing3=2, # apparent double newlines
-                                 lmargin1=20, 
-                                 lmargin2=20, 
-                                 rmargin=20)
-
-        for tag in ('code_keyword', 'code_string', 'code_comment', 'code_number',
-                    'code_function', 'code_class', 'code_decorator', 'code_operator'):
-            self._textbox.tag_config(tag, font=('Consolas', base_size - 1))
-
-        self._textbox.tag_config('blockquote', font=('Segoe UI', base_size, 'italic'),
-                                 lmargin1=30, lmargin2=30, spacing1=8, spacing3=8, borderwidth=3)
-
-        # Tag genérica de link (visual); cada link terá também uma tag única para binding)
-        self._textbox.tag_config('link', underline=True)
-        # Cursor é gerenciado por tag, então não vinculamos aqui ao 'link' genérico
-
-        self._textbox.tag_config('list_item',   lmargin1=25, lmargin2=40)
-        self._textbox.tag_config('list_bullet')
-        self._textbox.tag_config('list_number', font=('Segoe UI', base_size, 'bold'))
-
-        self._textbox.tag_config('hr', font=('Segoe UI', base_size), spacing1=15, spacing3=15, justify='center')
-
-        self._textbox.tag_config('table_border', font=('Consolas', base_size))
-        self._textbox.tag_config('table_header', font=('Consolas', base_size, 'bold'))
-        self._textbox.tag_config('table_cell',   font=('Consolas', base_size))
-        self._textbox.tag_config('table_row_alt', font=('Consolas', base_size))
-
-        self._textbox.tag_config('checkbox_done')
-        self._textbox.tag_config('checkbox_pending')
-
-        self._apply_theme()
 
     def _get_mode(self, mode=None):
         if mode is None:
@@ -655,7 +561,6 @@ class CTkMarkdown(ctk.CTkTextbox):
                 level = len(header_match.group(1))
                 content = header_match.group(2)
                 self._register_heading_anchor(content)   # ← novo
-                #self._insert_formatted_text(content, f'h{level}')
                 self._render_inline_markdown(textbox=self._textbox, text=content, base_tag=f'h{level}')
                 self.insert(tk.END, '\n')
                 i += 1
@@ -669,7 +574,6 @@ class CTkMarkdown(ctk.CTkTextbox):
                     i += 1
                 quote_text = ' '.join(quote_lines)
                 self.insert(tk.END, '┃ ', 'blockquote')
-                #self._insert_formatted_text(quote_text + '      ', 'blockquote')
                 self._render_inline_markdown(textbox=self._textbox, text=quote_text + '      ', base_tag='blockquote')
                 self.insert(tk.END, '\n\n')
                 continue
@@ -686,11 +590,9 @@ class CTkMarkdown(ctk.CTkTextbox):
                     checkbox = '☑' if checked else '☐'
                     tag = 'checkbox_done' if checked else 'checkbox_pending'
                     self.insert(tk.END, '  ' * indent + checkbox + ' ', tag)
-                    #self._insert_formatted_text(text_content, 'list_item')
                     self._render_inline_markdown(textbox=self._textbox, text=text_content, base_tag='list_item')
                 else:
                     self.insert(tk.END, '  ' * indent + '• ', 'list_bullet')
-                    #self._insert_formatted_text(content, 'list_item')
                     self._render_inline_markdown(textbox=self._textbox, text=content, base_tag='list_item')
                 self.insert(tk.END, '\n')
                 i += 1
@@ -703,7 +605,6 @@ class CTkMarkdown(ctk.CTkTextbox):
                 num = ordered_match.group(2)
                 content = ordered_match.group(3)
                 self.insert(tk.END, '  ' * indent + f'{num}. ', 'list_number')
-                #self._insert_formatted_text(content, 'list_item')
                 self._render_inline_markdown(textbox=self._textbox, text=content, base_tag='list_item')
                 self.insert(tk.END, '\n')
                 i += 1
@@ -720,7 +621,6 @@ class CTkMarkdown(ctk.CTkTextbox):
 
             # Parágrafo normal
             if line.strip():
-                # self._insert_formatted_text(line)
                 self._render_inline_markdown(textbox=self._textbox, text=line)
                 self.insert(tk.END, '\n')
             else:
@@ -817,63 +717,6 @@ class CTkMarkdown(ctk.CTkTextbox):
                 textbox.insert(tk.END, remaining, base_tag)
             else:
                 textbox.insert(tk.END, remaining)
-                
-
-    def _insert_formatted_text(self, text: str, base_tag: str | None = None):
-        """Insere texto com formatação inline (negrito, itálico, links, etc.)."""
-        pattern = re.compile(
-            r'(?P<bold_italic>\*\*\*(?P<bi_text>.+?)\*\*\*|___(?P<bi_text2>.+?)___)'
-            r'|(?P<bold>\*\*(?P<b_text>.+?)\*\*|__(?P<b_text2>.+?)__)'
-            r'|(?P<italic>\*(?P<i_text>.+?)\*|_(?P<i_text2>.+?)_)'
-            r'|(?P<strike>~~(?P<s_text>.+?)~~)'
-            r'|(?P<code>`(?P<c_text>[^`]+)`)'
-            r'|(?P<image>!\[(?P<img_alt>[^\]]*)\]\((?P<img_url>[^)]+)\))'
-            r'|(?P<link>\[(?P<l_text>[^\]]+)\]\((?P<l_url>[^)]+)\))'
-        )
-
-        last_end = 0
-        for match in pattern.finditer(text):
-            start, end = match.span()
-            if start > last_end:
-                plain = text[last_end:start]
-                self.insert(tk.END, plain, base_tag) if base_tag else self.insert(tk.END, plain)
-
-            if match.group('bold_italic'):
-                content = match.group('bi_text') or match.group('bi_text2')
-                tags = ('bold_italic', base_tag) if base_tag else ('bold_italic',)
-                self.insert(tk.END, content, tags)
-            elif match.group('bold'):
-                content = match.group('b_text') or match.group('b_text2')
-                tags = ('bold', base_tag) if base_tag else ('bold',)
-                self.insert(tk.END, content, tags)
-            elif match.group('italic'):
-                content = match.group('i_text') or match.group('i_text2')
-                tags = ('italic', base_tag) if base_tag else ('italic',)
-                self.insert(tk.END, content, tags)
-            elif match.group('strike'):
-                content = match.group('s_text')
-                tags = ('strikethrough', base_tag) if base_tag else ('strikethrough',)
-                self.insert(tk.END, content, tags)
-            elif match.group('code'):
-                content = match.group('c_text')
-                tags = ('code_inline', base_tag) if base_tag else ('code_inline',)
-                self.insert(tk.END, content, tags)
-            elif match.group('image'):
-                self._insert_image(self._textbox, match.group('img_alt'), match.group('img_url'))
-            elif match.group('link'):
-                # ← usa _insert_link em vez de tag genérica
-                self._insert_link(
-                    self._textbox,
-                    match.group('l_text'),
-                    match.group('l_url'),
-                    base_tag
-                )
-
-            last_end = end
-
-        if last_end < len(text):
-            remaining = text[last_end:]
-            self.insert(tk.END, remaining, base_tag) if base_tag else self.insert(tk.END, remaining)
 
     # ──────────────────────────────────────────────
     #  Blocos de código com botão copiar  ← NOVIDADE
@@ -1011,18 +854,8 @@ class CTkMarkdown(ctk.CTkTextbox):
             widget.bind("<Button-4>", forward_scroll)
             widget.bind("<Button-5>", forward_scroll)
 
-        def set_text_height(textbox: tk.Text):
-            """
-            Size the Text widget to its current content.
-
-            This initially handles explicit newlines. Wrapped display-line
-            sizing can be added once the table has its final column widths.
-            """
-            content = textbox.get("1.0", "end-1c")
-            lines = max(1, content.count("\n") + 1)
-            textbox.configure(height=lines)
-
         def table_visible_text(text: str) -> str:
+            """Convert Markdown content to its visible text representation removing all formatting and links."""
             text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
 
             # Images -> alt text
@@ -1077,20 +910,6 @@ class CTkMarkdown(ctk.CTkTextbox):
             if cells and any(cells):
                 rows.append(cells)
 
-        # column_widths = [max(len(headers[col]), *(len(row[col]) for row in rows)) for col in range(len(headers))]
-        # column_widths = [
-        #     max(
-        #         min_column_width,
-        #         min(
-        #             max(
-        #                 len(headers[col]),
-        #                 *(len(row[col]) if col < len(row) else 0 for row in rows)
-        #             ) + 2,
-        #             max_column_width
-        #         )
-        #     )
-        #     for col in range(len(headers))
-        # ]
         column_widths = [
             min(
                 self.table_max_column_width,
@@ -1124,8 +943,6 @@ class CTkMarkdown(ctk.CTkTextbox):
         )
         for col in range(len(headers)):
             table_frame.columnconfigure(col, weight=1)        
-        #table_frame.grid_propagate(True)
-        #table_frame.pack_propagate(True)
 
         # ------------------------------------------------------------
         # Forward mouse-wheel events to the main Markdown textbox
@@ -1166,11 +983,14 @@ class CTkMarkdown(ctk.CTkTextbox):
             base_size,
             'bold'
         )
+
         table_rows: list[list[tk.Text]] = []
+
         # ------------------------------------------------------------
         # Headers
         # ------------------------------------------------------------
         header_widgets: list[tk.Text] = []
+
         for col, header in enumerate(headers):
 
             cell = tk.Text(
@@ -1207,8 +1027,6 @@ class CTkMarkdown(ctk.CTkTextbox):
                 header,
                 enable_images=False
             )
-
-            #set_text_height(cell)
 
             # Prevent editing while still allowing tag bindings/links.
             cell.configure(state='disabled')
@@ -1370,117 +1188,6 @@ class CTkMarkdown(ctk.CTkTextbox):
         resize_table_rows()
         self.insert(tk.END, '\n')
 
-    def _insert_table0(self, table_lines: list):
-        """Insere tabela responsiva ao tema claro/escuro."""
-        if len(table_lines) < 2:
-            return
-
-        def table_text(text: str) -> str:
-            return re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
-        
-        header_line = table_lines[0].strip().strip('|')
-        #headers = [c.strip() for c in header_line.split('|')]
-        headers =  [table_text(c.strip()) for c in header_line.split('|')]
-
-        rows = []
-        for line in table_lines[2:]:
-            line = line.strip().strip('|')
-            cells = [c.strip() for c in line.split('|')]
-            if cells and any(c for c in cells):
-                rows.append(cells)
-
-        mode = self._get_mode()
-        c = self._theme_colors[mode]
-
-        # O bg do frame age como cor de borda entre células
-        table_frame = tk.Frame(self, bg=c['table_border'], padx=0, pady=0)
-
-        # Trata o scroll do mouse para não travar sobre a tabela
-        def forward_scroll(event):
-            # Para Windows/Mac (event.delta) e Linux (event.num)
-            if hasattr(event, "delta") and event.delta != 0:
-                self._textbox.yview_scroll(int(-1 * (event.delta / 120)), "units")
-            elif hasattr(event, "num"):
-                if event.num == 5:
-                    self._textbox.yview_scroll(1, "units")
-                elif event.num == 4:
-                    self._textbox.yview_scroll(-1, "units")
-
-        table_frame.bind("<MouseWheel>", forward_scroll)
-        table_frame.bind("<Button-4>", forward_scroll)
-        table_frame.bind("<Button-5>", forward_scroll)
-
-        # Referência para atualização de tema posterior
-        all_widgets: list[tuple[tk.Label, str]] = []  # (label, role)
-
-        for col, header in enumerate(headers):
-            lbl = tk.Label(
-                table_frame, text=header,
-                # font=('Segoe UI', 10, 'bold'),
-                font=self._textbox.cget('font'),
-                bg=c['table_header_bg'], fg=c['table_header_fg'],
-                padx=10, pady=5, relief='flat', anchor='w'
-            )
-            lbl.grid(row=0, column=col, sticky='nsew', padx=1, pady=1)
-            lbl.bind("<MouseWheel>", forward_scroll)
-            lbl.bind("<Button-4>", forward_scroll)
-            lbl.bind("<Button-5>", forward_scroll)
-            all_widgets.append((lbl, 'header'))
-
-        for row_idx, row in enumerate(rows):
-            role = 'alt' if row_idx % 2 == 1 else 'cell'
-            for col_idx in range(len(headers)):
-                #cell_text = row[col_idx] if col_idx < len(row) else ""
-                #cell_text = row[col_idx] if col_idx < len(row) else ""
-                cell_text = table_text(row[col_idx]) if col_idx < len(row) else ""
-                # cell_text = re.sub(r'<br\s*/?>', '\n', cell_text, flags=re.IGNORECASE)                
-                bg = c['table_row_alt_bg'] if role == 'alt' else c['table_cell_bg']
-                lbl = tk.Label(
-                    table_frame, 
-                    text=cell_text,
-                    #font=(self.font.cget('family'), self.font.cget('size')),   #('Segoe UI', 10),
-                    font=self._textbox.cget('font'),
-                    bg=bg, 
-                    fg=c['table_cell_fg'],
-                    padx=10, 
-                    pady=5, 
-                    relief='flat', 
-                    anchor='nw',
-                    justify='left',
-                    wraplength=500,
-                )
-                lbl.grid(row=row_idx + 1, column=col_idx, sticky='nsew', padx=1, pady=1)
-                lbl.bind("<MouseWheel>", forward_scroll)
-                lbl.bind("<Button-4>", forward_scroll)
-                lbl.bind("<Button-5>", forward_scroll)
-                all_widgets.append((lbl, role))
-
-        for col in range(len(headers)):
-            table_frame.columnconfigure(col, weight=1)
-
-        # Registra callback para atualização de tema ← novo
-        def update_table_theme(new_mode=None, widgets=all_widgets, frame=table_frame):
-            m = self._get_mode(new_mode)
-            tc = self._theme_colors[m]
-            frame.configure(bg=tc['table_border'])
-            for lbl, role in widgets:
-                if role == 'header':
-                    lbl.configure(bg=tc['table_header_bg'], fg=tc['table_header_fg'])
-                elif role == 'alt':
-                    lbl.configure(bg=tc['table_row_alt_bg'], fg=tc['table_cell_fg'])
-                else:
-                    lbl.configure(bg=tc['table_cell_bg'], fg=tc['table_cell_fg'])
-
-        try:
-            ctk.AppearanceModeTracker.add(update_table_theme, self)
-        except Exception:
-            pass
-
-        self.insert(tk.END, '\n')
-        # Adiciona um padx de 25 pixels garantindo assim que haja espaço para a scrollbar do CTkTextbox
-        self._textbox.window_create(tk.END, window=table_frame, padx=25)
-        self.insert(tk.END, '\n')
-
     # ──────────────────────────────────────────────
     #  Exemplo de uso
     # ──────────────────────────────────────────────
@@ -1534,11 +1241,11 @@ const fetchData = async (url) => {
 
 ## Seção D — Tabela
 
-| Linguagem  | Tipo     | Popularidade |
-|------------|----------|--------------|
-| Python     | Dinâmica | ⭐⭐⭐⭐⭐ |
-| JavaScript | Dinâmica | ⭐⭐⭐⭐⭐ |
-| Rust       | Estática | ⭐⭐⭐⭐   |
+| **Linguagem**  | **Tipo**     | **Popularidade** | **Link** |
+|------------|----------|--------------|----------------|
+| *Python*     | Dinâmica | ⭐⭐⭐⭐⭐ | [Python.org](https://python.org) |
+| *JavaScript* | Dinâmica | ⭐⭐⭐⭐⭐ | [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript) |
+| *Rust*       | Estática | ⭐⭐⭐⭐   | [Rust Lang](https://www.rust-lang.org) |
 
 ## Seção E — Imagens
 
