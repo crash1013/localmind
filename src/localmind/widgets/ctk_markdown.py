@@ -163,6 +163,11 @@ class CTkMarkdown(ctk.CTkTextbox):
         textbox.tag_config('underline',   underline=True)
         textbox.tag_config('code_inline', font=('Consolas', base_size), spacing1=2)
         textbox.tag_config('link', underline=True)
+
+        textbox.tag_config('align_left',   justify='left')
+        textbox.tag_config('align_center', justify='center')
+        textbox.tag_config('align_right',  justify='right')
+
         self._apply_inline_theme(textbox)
 
     def _apply_inline_theme(self, textbox: tk.Text, mode=None):
@@ -896,6 +901,23 @@ class CTkMarkdown(ctk.CTkTextbox):
             table_text(cell.strip())
             for cell in header_line.split('|')
         ]
+        
+        alignment_line = table_lines[1].strip().strip('|')
+        def get_alignment(cell: str) -> str:
+            cell = cell.strip()
+
+            if not re.fullmatch(r':?-+:?', cell):
+                return 'left'
+            if cell.startswith(':') and cell.endswith(':'):
+                return 'center'
+            if cell.endswith(':'):
+                return 'right'
+            return 'left' 
+               
+        alignments = [
+            get_alignment(cell)
+            for cell in alignment_line.split('|')
+        ]
 
         rows: list[list[str]] = []
 
@@ -1028,6 +1050,9 @@ class CTkMarkdown(ctk.CTkTextbox):
                 enable_images=False
             )
 
+            if col < len(alignments):
+                cell.tag_add(f"align_{alignments[col]}", '1.0', 'end-1c')
+
             # Prevent editing while still allowing tag bindings/links.
             cell.configure(state='disabled')
             header_widgets.append(cell)
@@ -1085,13 +1110,13 @@ class CTkMarkdown(ctk.CTkTextbox):
                 bind_scroll(cell)
 
                 self._setup_inline_tags(cell)
-
                 self._render_inline_markdown(
                     cell,
                     cell_text,
                     enable_images=False
                 )
-
+                if col_idx < len(alignments):
+                    cell.tag_add(f"align_{alignments[col_idx]}", '1.0', 'end-1c')
                 #set_text_height(cell)
 
                 cell.configure(state='disabled')
