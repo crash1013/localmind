@@ -9,7 +9,7 @@ The systems used during LocalMind development include:
 | Windows | Intel Arc Pro B70 | SYCL, Vulkan |
 | Fedora Linux | Intel Arc B580 | SYCL, Vulkan |
 
-The examples in this document show how to clone, build, install, and configure llama.cpp for use with LocalMind. The supplied scripts are examples: paths, compiler versions, package names, and Linux prerequisites may need to be adapted for your system.
+The examples in this document show how to clone, build, install, and configure llama.cpp for use with LocalMind. The supplied scripts are examples: paths, compiler versions, package names, and Linux prerequisites will need to be adapted for your system.
 
 ## Recommended locations
 

@@ -7,7 +7,7 @@
 
 ## Table of Contents
 
-| **Section ** | **Description** | **Link** |
+| **Section** | **Description** | **Link** |
 | :----------- | :-------------- | :------- |
 | *Filters Compare Hosts* | A step by step example that demonstrates configuration for comparing hosts | [Compare Hosts Example](#applying-filters-compare-hosts-example) |
 | *Filters Compare Backends* | A step by step example that demonstrates configuration for comparing backends | [Compare Backend Example](#applying-filters-compare-backend-example) |
