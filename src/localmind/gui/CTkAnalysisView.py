@@ -789,9 +789,9 @@ class CTkGraph(ctk.CTkFrame):
                 legend.remove()
             else:
                 legend_frame = legend.get_frame()
-                legend_frame.set_facecolor(CTkAppView.theme_color("CTkTextbox", "fg_color"))
-                legend_frame.set_edgecolor(CTkAppView.theme_color("CTkTextbox", "border_color"))
-                text_color = CTkAppView.theme_color("CTkLabel", "text_color")
+                legend_frame.set_facecolor(self._mpl_color(CTkAppView.theme_color("CTkTextbox", "fg_color")))
+                legend_frame.set_edgecolor(self._mpl_color(CTkAppView.theme_color("CTkTextbox", "border_color")))
+                text_color = self._mpl_color(CTkAppView.theme_color("CTkLabel", "text_color")) 
                 legend.set_title(self.hue)
 
                 for text in legend.get_texts():
