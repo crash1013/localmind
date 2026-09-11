@@ -421,8 +421,8 @@ class CTkGraph(ctk.CTkFrame):
     # ------------------------------------------------------------------
     # Figure and canvas creation
     # ------------------------------------------------------------------
-
-    def colors(self)-> dict[str, str]:
+        
+    def colors_no_adjust(self)-> dict[str, str]:
         """Return a dictionary of colors used in the current Matplotlib style."""
         with plt.style.context(self.resolved_plot_style):
             return  {
@@ -432,6 +432,29 @@ class CTkGraph(ctk.CTkFrame):
             "border": CTkAppView.theme_color("CTkFrame", "border_color"),
             "accent": CTkAppView.theme_color("CTkButton", "fg_color"),
         }
+
+    def _mpl_color(self, color) -> str:
+        try:
+            r, g, b = self.winfo_rgb(color)
+        except tk.TclError:
+            return color
+        return f"#{r // 256:02x}{g // 256:02x}{b // 256:02x}"
+
+    def colors(self)-> dict[str, str]:
+        """Return a dictionary of colors used in the current Matplotlib style."""
+        c = {
+            "background": CTkAppView.theme_color("CTkTextbox", "fg_color"),
+            "text": CTkAppView.theme_color("CTkLabel", "text_color"),
+            "grid": CTkAppView.theme_color("CTkFrame", "border_color"),
+            "border": CTkAppView.theme_color("CTkFrame", "border_color"),
+            "accent": CTkAppView.theme_color("CTkButton", "fg_color"),
+        }
+
+        return {
+            name: self._mpl_color(color)
+            for name, color in c.items()
+        }
+
 
     def _create_figure(self) -> None:
         """Create the Matplotlib figure and axes once."""

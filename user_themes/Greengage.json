@@ -110,6 +110,10 @@
     "text_color": [
       "#f6f6f6",
       "#bec6cc"
+    ],
+    "text_color_disabled": [
+      "#a0a8b5",
+      "#a8b2c0"
     ]
   },
   "CTkSwitch": {
@@ -160,6 +164,10 @@
     "text_color": [
       "#f6f6f6",
       "#bec6cc"
+    ],
+    "text_color_disabled": [
+      "#a0a8b5",
+      "#a8b2c0"
     ]
   },
   "CTkProgressBar": {
