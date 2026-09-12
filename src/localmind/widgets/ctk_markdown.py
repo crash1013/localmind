@@ -240,7 +240,7 @@ class CTkMarkdown(ctk.CTkTextbox):
 
         for level in range(1, 7):
             textbox.tag_config(
-                f'heading_{level}',
+                f'heading{level}',
                 foreground=c[f'heading_{level}']
             )
 
@@ -566,7 +566,7 @@ class CTkMarkdown(ctk.CTkTextbox):
                 level = len(header_match.group(1))
                 content = header_match.group(2)
                 self._register_heading_anchor(content)   # ← novo
-                self._render_inline_markdown(textbox=self._textbox, text=content, base_tag=f'h{level}')
+                self._render_inline_markdown(textbox=self._textbox, text=content, base_tag=f'heading_{level}')
                 self.insert(tk.END, '\n')
                 i += 1
                 continue
