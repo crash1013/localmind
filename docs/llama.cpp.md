@@ -86,7 +86,7 @@ To see the presets available in your current checkout:
 cmake --list-presets
 ```
 
-The LocalMind development builds use:
+The LocalMind development builds on Windows use:
 
 - `x64-windows-vulkan-release`
 - `x64-windows-sycl-release`
@@ -266,11 +266,86 @@ exit /b 1
 
 # Linux builds
 
+## Linux Vulkan Build
+
 Linux builds require more attention to distribution-specific prerequisites than Windows builds. Ubuntu and Fedora are the primary Linux families used during LocalMind development and testing.
 
 Install compiler and SDK packages using the distribution package manager where practical. This makes future updates easier to manage through normal system updates.
 
-## Linux SYCL prerequisites
+
+On systems with an Intel GPU, `sycl-ls` should list a GPU device through Level Zero and/or OpenCL.
+
+### Linux Vulkan prerequisites
+
+For the Vulkan SDK tarball installation, follow LunarG's current instructions:
+
+[Getting Started with the Linux Tarball Vulkan SDK](https://vulkan.lunarg.com/doc/view/latest/linux/getting_started.html)
+
+**Example Vulkan Build Script**
+
+```
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO="$HOME/work/llama.cpp"
+INSTALL_PREFIX="$HOME/llama-vulkan-release"
+BUILD_DIR="build"
+VULKAN_DIR="$HOME/vulkan/1.4.357.1"
+
+cd "$REPO"
+
+echo "[1/6] Updating repo..."
+git fetch --all --prune
+git pull --ff-only
+
+echo "[2/6] Cleaning old build..."
+rm -rf "$BUILD_DIR"
+
+echo "[3/6] Setting Vulkan Environment"
+
+if [[ -f $VULKAN_DIR/setup-env.sh ]]; then
+    # Avoid noisy repeat initialization when possible
+    if [[ -z "${VULKAN_SDK:-}" ]]; then
+        set +u
+        source "$VULKAN_DIR/setup-env.sh"
+        set -u
+        if [[ -z "${VULKAN_SDK:-}" ]]; then
+            echo "ERROR: Vulkan SDK environment initialization failed"
+            exit 1
+        fi
+    fi
+    echo "VULKAN environment: $VULKAN_SDK"
+else
+    echo "ERROR: $VULKAN_DIR/setup-env.sh not found"
+    exit 1
+fi
+
+echo "[4/6] Configuring CMake..."
+
+cmake -B "$BUILD_DIR" -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX"
+
+echo "[5/6] Building..."
+
+cmake --build "$BUILD_DIR" --config Release -j"$(nproc)"
+
+echo "[6/6] Installing..."
+cmake --install "$BUILD_DIR"
+
+echo
+echo "Installed binaries should be under:"
+echo "  $INSTALL_PREFIX/bin"
+echo
+echo "Version check:"
+LD_LIBRARY_PATH="$INSTALL_PREFIX/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+"$INSTALL_PREFIX/bin/llama-server" --version || true
+
+```
+
+---
+
+## Linux SYCL build
+
+### Linux SYCL prerequisites
 
 For SYCL builds, install Intel oneAPI using the package manager for your distribution.
 
@@ -289,56 +364,21 @@ icpx --version
 sycl-ls
 ```
 
-On systems with an Intel GPU, `sycl-ls` should list a GPU device through Level Zero and/or OpenCL.
-
-## Linux Vulkan prerequisites
-
-For the Vulkan SDK tarball installation, follow LunarG's current instructions:
-
-[Getting Started with the Linux Tarball Vulkan SDK](https://vulkan.lunarg.com/doc/view/latest/linux/getting_started.html)
-
-The SDK setup script should be sourced before configuring a Vulkan build so that `VULKAN_SDK`, `PATH`, `LD_LIBRARY_PATH`, `PKG_CONFIG_PATH`, and `CMAKE_PREFIX_PATH` are configured correctly.
-
----
-
-## Linux SYCL build
 
 The Linux SYCL example does not use a CMake preset. It explicitly selects Intel's compilers and enables `GGML_SYCL`.
 
 The install library directory differs between common Linux families:
 
-- Debian/Ubuntu: `$HOME/.local/lib`
-- Fedora/RHEL: `$HOME/.local/lib64`
-
-Example build script:
+- Debian/Ubuntu: `$INSTALL_PREFIX/lib`
+- Fedora/RHEL: `$INSTALL_PREFIX/lib64`
 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
 REPO="$HOME/work/llama.cpp"
-INSTALL_PREFIX="$HOME/.local"
+INSTALL_PREFIX="$HOME/llama-sycl-release"
 BUILD_DIR="build-sycl"
-
-# Determine Linux distribution family and installation library directory.
-if [[ ! -r /etc/os-release ]]; then
-    echo "ERROR: Unable to determine Linux distribution."
-    exit 1
-fi
-
-. /etc/os-release
-
-if [[ "$ID" == "debian" || "$ID" == "ubuntu" || "${ID_LIKE:-}" == *debian* ]]; then
-    DISTRO_FAMILY="debian"
-    LIB_DIR="$INSTALL_PREFIX/lib"
-elif [[ "$ID" == "fedora" || "$ID" == "rhel" || "$ID" == "centos" || \
-        "${ID_LIKE:-}" == *fedora* || "${ID_LIKE:-}" == *rhel* ]]; then
-    DISTRO_FAMILY="redhat"
-    LIB_DIR="$INSTALL_PREFIX/lib64"
-else
-    echo "ERROR: Unsupported distribution: ${PRETTY_NAME:-unknown}"
-    exit 1
-fi
 
 cd "$REPO"
 
@@ -350,33 +390,19 @@ echo "[2/6] Cleaning old build..."
 rm -rf "$BUILD_DIR"
 
 echo "[3/6] Loading Intel oneAPI..."
-ONEAPI_SETUP="/opt/intel/oneapi/setvars.sh"
-
-if [[ -n "${ONEAPI_ROOT:-}" ]]; then
-    echo "oneAPI already initialized: $ONEAPI_ROOT"
-elif [[ -f "$ONEAPI_SETUP" ]]; then
-    set +u
-    source "$ONEAPI_SETUP"
-    set -u
+if [[ -f /opt/intel/oneapi/setvars.sh ]]; then
+    # Avoid noisy repeat initialization when possible
+    if [[ -z "${ONEAPI_ROOT:-}" ]]; then
+        set +u
+        source /opt/intel/oneapi/setvars.sh
+        set -u
+    else
+        echo "oneAPI already initialized: $ONEAPI_ROOT"
+    fi
 else
-    echo "ERROR: oneAPI setup script not found:"
-    echo "  $ONEAPI_SETUP"
+    echo "ERROR: /opt/intel/oneapi/setvars.sh not found"
     exit 1
 fi
-
-if ! command -v icx >/dev/null 2>&1; then
-    echo "ERROR: icx not found after loading oneAPI."
-    exit 1
-fi
-
-if ! command -v icpx >/dev/null 2>&1; then
-    echo "ERROR: icpx not found after loading oneAPI."
-    exit 1
-fi
-
-echo
-echo "SYCL devices:"
-sycl-ls || true
 
 echo "[4/6] Configuring CMake..."
 cmake -B "$BUILD_DIR" \
@@ -392,70 +418,18 @@ cmake --build "$BUILD_DIR" --config Release -j"$(nproc)"
 echo "[6/6] Installing..."
 cmake --install "$BUILD_DIR"
 
-mkdir -p "$LIB_DIR"
-
-find "$BUILD_DIR" -type f \( \
-    -name 'libllama*.so*' -o \
-    -name 'libggml*.so*' -o \
-    -name 'libmtmd*.so*' \
-\) -exec cp -av {} "$LIB_DIR" \;
-
-sudo ldconfig "$LIB_DIR"
+cd ~
 
 echo
 echo "Installed binaries should be under:"
 echo "  $INSTALL_PREFIX/bin"
 echo
 echo "Version check:"
+
+LD_LIBRARY_PATH="$INSTALL_PREFIX/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
 "$INSTALL_PREFIX/bin/llama-server" --version || true
+
 ```
-
-### Ubuntu 24.04 / oneAPI host compiler note
-
-During Ubuntu 24.04 testing with oneAPI 2026.1, `icpx` may detect multiple GCC installations and fail with:
-
-```text
-icpx: error: C++ header location not resolved; check installed C++ dependencies
-```
-
-If GCC 13 is the complete host C++ toolchain, verify it directly:
-
-```bash
-icpx --gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13 \
-    /tmp/test.cpp -o /tmp/test
-```
-
-If this resolves the issue, pass the same GCC installation directory to CMake:
-
-```bash
--DCMAKE_C_FLAGS="--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13" \
--DCMAKE_CXX_FLAGS="--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13"
-```
-
-Only add these flags when needed; a normal oneAPI installation should not require them on every system.
-
-### WSL SYCL note
-
-On WSL, `sycl-ls` can be used to verify that the Intel GPU is visible to the oneAPI runtime. A working configuration should list a Level Zero GPU device, for example:
-
-```text
-[level_zero:gpu][level_zero:0] Intel(R) oneAPI Unified Runtime over Level-Zero V2, Intel(R) Graphics ...
-```
-
-A llama.cpp SYCL build may also emit a repeated warning similar to:
-
-```text
-Warning: zesInit failed [ggml_check_sycl] with code 2013265921.
-Sysman free-memory query may be unavailable.
-```
-
-This warning concerns the Level Zero Sysman path. GPU compute can still function, but the warning can make benchmark output difficult to read. For a known test run, `stderr` can be discarded:
-
-```bash
-llama-bench ... 2>/dev/null
-```
-
-This hides all standard-error output, including unrelated warnings and real errors, so use it only when appropriate.
 
 ---
 
@@ -472,10 +446,11 @@ C:\llama-sycl-release\bin\llama-server --version
 
 ### Linux
 
-If `$HOME/.local/bin` is not already on your `PATH`:
+If `$INSTALL_PATH/bin` is not already on your `PATH`:
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
+sudo ldconfig "$INSTALL_PREFIX/lib64"
 ```
 
 Then:
@@ -504,7 +479,7 @@ C:\llama-sycl-release\bin
 A typical Linux location is:
 
 ```text
-~/.local/bin
+~/llama_vulkan/release/bin
 ```
 
 ![Select llama.cpp install path(s)](./images/llama-exe1.png)
@@ -523,5 +498,7 @@ Once the prerequisite toolchains are installed, the recurring workflow is straig
 6. Install the result into a stable location.
 7. Verify `llama-server --version` and, when appropriate, run `llama-bench`.
 8. Add the installed executable path to LocalMind.
+
+**It is not possible to have a loader configuration for multiple backends because the target libraries share the same name.**
 
 The supplied scripts automate these steps and can be adapted as toolchain versions, hardware, and llama.cpp itself evolve.

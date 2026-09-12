@@ -240,7 +240,7 @@ class CTkMarkdown(ctk.CTkTextbox):
 
         for level in range(1, 7):
             textbox.tag_config(
-                f'h{level}',
+                f'heading_{level}',
                 foreground=c[f'heading_{level}']
             )
 
