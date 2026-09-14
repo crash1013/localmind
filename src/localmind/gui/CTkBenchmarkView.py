@@ -310,27 +310,26 @@ class CTkBenchmarkView(CTkAppView):
 
         def extract_json_from_llama_output(output: str) -> str:
             """
-            Extract JSON from llama-bench output that may contain backend log headers
-            before the actual JSON.
-
-            Supports JSON arrays or objects.
+            Extract the first valid JSON array or object from llama-bench output,
+            ignoring any diagnostic/logging text preceding it.
             """
 
-            text = output.strip()
+            decoder = json.JSONDecoder()
 
-            array_start = text.find("[")
+            for pos, char in enumerate(output):
+                if char not in "[{":
+                    continue
 
-            json_start = output.find("[")
+                try:
+                    obj, end = decoder.raw_decode(output[pos:])
+                except json.JSONDecodeError:
+                    continue
 
-            if json_start == -1:
-                raise ValueError("No JSON array found in llama-bench output.")
+                if isinstance(obj, (list, dict)):
+                    return output[pos:pos + end]
 
-            json_text = output[json_start:].strip()
-
-            # Validate that the extracted text is actually valid JSON.
-            json.loads(json_text)
-
-            return json_text
+            raise ValueError("No valid JSON array or object found in llama-bench output.") 
+               
         if return_code == 0:
             self.append_benchmark_output("\n[Benchmark completed successfully]\n")
             raw = extract_json_from_llama_output(self.benchmark_output)
