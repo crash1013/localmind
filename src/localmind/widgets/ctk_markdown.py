@@ -240,7 +240,7 @@ class CTkMarkdown(ctk.CTkTextbox):
 
         for level in range(1, 7):
             textbox.tag_config(
-                f'heading{level}',
+                f'heading_{level}',
                 foreground=c[f'heading_{level}']
             )
 
@@ -330,7 +330,7 @@ class CTkMarkdown(ctk.CTkTextbox):
         tb = self._textbox
 
         for level in range(1, 7):
-            tb.tag_config(f'h{level}', foreground=c[f'heading_{level}'])
+            tb.tag_config(f'heading_{level}', foreground=c[f'heading_{level}'])
 
         tb.tag_config('strikethrough', foreground=c['muted'])
         tb.tag_config('code_inline',   foreground=c['code_inline_fg'], background=c['code_inline_bg'])
@@ -647,10 +647,20 @@ class CTkMarkdown(ctk.CTkTextbox):
     ):
         """Render inline Markdown into the supplied Text widget."""
 
+        # pattern = re.compile(
+        #     r'(?P<bold_italic>\*\*\*(?P<bi_text>.+?)\*\*\*|___(?P<bi_text2>.+?)___)'
+        #     r'|(?P<bold>\*\*(?P<b_text>.+?)\*\*|__(?P<b_text2>.+?)__)'
+        #     r'|(?P<italic>\*(?P<i_text>.+?)\*|_(?P<i_text2>.+?)_)'
+        #     r'|(?P<strike>~~(?P<s_text>.+?)~~)'
+        #     r'|(?P<code>`(?P<c_text>[^`]+)`)'
+        #     r'|(?P<image>!\[(?P<img_alt>[^\]]*)\]\((?P<img_url>[^)]+)\))'
+        #     r'|(?P<link>\[(?P<l_text>[^\]]+)\]\((?P<l_url>[^)]+)\))'
+        # )
+
         pattern = re.compile(
-            r'(?P<bold_italic>\*\*\*(?P<bi_text>.+?)\*\*\*|___(?P<bi_text2>.+?)___)'
-            r'|(?P<bold>\*\*(?P<b_text>.+?)\*\*|__(?P<b_text2>.+?)__)'
-            r'|(?P<italic>\*(?P<i_text>.+?)\*|_(?P<i_text2>.+?)_)'
+            r'(?P<bold_italic>\*\*\*(?P<bi_text>.+?)\*\*\*|(?<!\w)___(?!\s)(?P<bi_text2>.+?)(?<!\s)___(?!\w))'
+            r'|(?P<bold>\*\*(?P<b_text>.+?)\*\*|(?<!\w)__(?!\s)(?P<b_text2>.+?)(?<!\s)__(?!\w))'
+            r'|(?P<italic>\*(?P<i_text>.+?)\*|(?<!\w)_(?!\s)(?P<i_text2>.+?)(?<!\s)_(?!\w))'
             r'|(?P<strike>~~(?P<s_text>.+?)~~)'
             r'|(?P<code>`(?P<c_text>[^`]+)`)'
             r'|(?P<image>!\[(?P<img_alt>[^\]]*)\]\((?P<img_url>[^)]+)\))'
@@ -892,6 +902,12 @@ class CTkMarkdown(ctk.CTkTextbox):
 
             return text
 
+        def get_max_line_length(text: str) -> int:
+            """Return the length of the longest line in the visible text."""
+            visible = table_visible_text(text)
+            lines = visible.split('\n')
+            return max((len(line) for line in lines), default=0)        
+
         # ------------------------------------------------------------
         # Parse table
         # ------------------------------------------------------------
@@ -938,9 +954,12 @@ class CTkMarkdown(ctk.CTkTextbox):
                 max(
                     self.table_min_column_width,
                     max(
-                        len(table_visible_text(headers[col])),
+                        #len(table_visible_text(headers[col])),
+                        get_max_line_length(headers[col]),
+                        
                         *(
-                            len(table_visible_text(row[col]))
+                            #len(table_visible_text(row[col]))
+                            get_max_line_length(row[col])
                             if col < len(row)
                             else 0
                             for row in rows
@@ -1131,23 +1150,47 @@ class CTkMarkdown(ctk.CTkTextbox):
         # ------------------------------------------------------------
         # resize table updates
         # ------------------------------------------------------------
+        # def resize_table_rows0():
+        #     table_frame.update_idletasks()
+
+        #     for cell, _role in all_widgets:
+        #         count_result = cell.count(
+        #             '1.0',
+        #             'end-1c',
+        #             'chars'
+        #         )
+        #         chars = count_result[0] if count_result else 0
+
+        #         width = cell.cget('width')
+
+        #         lines = (chars // width) + 1 if chars > 0 else 1
+
+        #         cell.configure(height=lines)
+
         def resize_table_rows():
             table_frame.update_idletasks()
 
             for cell, _role in all_widgets:
-                count_result = cell.count(
-                    '1.0',
-                    'end-1c',
-                    'chars'
-                )
-                chars = count_result[0] if count_result else 0
+                # Get actual cell content without the trailing auto-added newline
+                text_content = cell.get('1.0', 'end-1c')
+                
+                if not text_content:
+                    cell.configure(height=1)
+                    continue
 
                 width = cell.cget('width')
+                total_lines = 0
 
-                lines = (chars // width) + 1 if chars > 0 else 1
+                # Account for both explicit newline breaks and soft text-wrapping
+                for line in text_content.split('\n'):
+                    line_len = len(line)
+                    if line_len == 0:
+                        total_lines += 1  # Empty line still consumes vertical space
+                    else:
+                        # Calculate wrapped lines for this specific segment
+                        total_lines += (line_len + width - 1) // width
 
-                cell.configure(height=lines)
-
+                cell.configure(height=max(1, total_lines))
          # ------------------------------------------------------------
         # Appearance-mode updates
         # ------------------------------------------------------------
