@@ -424,6 +424,42 @@ class LlamaBenchSettingsDialog(ctk.CTkToplevel):
         if item_id in self._item_to_entry:
             self._edit_item(item_id)
 
+    def _open_file_dialog(self, item_id: str, entry: dict) -> None:
+        initial_dir = Path(
+            self.current_options.get("--model", ".")
+        ).parent
+
+        filename = filedialog.askopenfilename(
+            title="Select file",
+            initialdir=initial_dir,
+            filetypes=[
+                ("GGUF files", "*.gguf"),
+                ("Text files", "*.txt"),
+                ("All files", "*.*"),
+            ],
+        )
+
+        if filename:
+            entry["value"] = filename
+            self._refresh_item(item_id, entry)
+            self._update_changed_label()
+
+
+    def _open_directory_dialog(self, item_id: str, entry: dict) -> None:
+        initial_dir = Path(
+            self.current_options.get("--model", ".")
+        ).parent
+
+        directory = filedialog.askdirectory(
+            title="Select directory",
+            initialdir=initial_dir,
+        )
+
+        if directory:
+            entry["value"] = directory
+            self._refresh_item(item_id, entry)
+            self._update_changed_label()
+
     def _edit_item(self, item_id: str) -> None:
         entry = self._item_to_entry[item_id]
 
@@ -434,27 +470,45 @@ class LlamaBenchSettingsDialog(ctk.CTkToplevel):
             return
 
         choices = entry.get("choices")
-        value_hint = entry.get("value_hint")
-        if value_hint == '<filename>':
-            initial_dir = Path(self.current_options.get("--model", ".")).parent
-            filename =filedialog.askopenfilename(
-                title="Select the model file",
-                # initialdir=".",
-                initialdir=initial_dir,
-                filetypes=[
-                    ("GGUF files", "*.gguf"),
-                    ("Text files", "*.txt"),
-                    ("All files", "*.*"),
-                ]
-            )
-            if filename:
-                entry["value"] = filename
-                self._refresh_item(item_id, entry)
-                self._update_changed_label()
-        elif choices:
-            self._open_choice_dialog(item_id, entry, choices)
-        else:
-            self._open_value_dialog(item_id, entry)
+        value_hint = (entry.get("value_hint") or "").strip().upper()
+        match value_hint:
+            case hint if hint in {"DIR", "DIRECTORY", "FOLDER"}:
+                self._open_directory_dialog(item_id, entry)
+
+            case hint if (
+                hint in {"PATH", "FILE", "<FILE>", "FILENAME", "<FILENAME>"}
+                or ".GGUF" in hint
+            ):
+                self._open_file_dialog(item_id, entry)
+
+            case _ if choices:
+                self._open_choice_dialog(item_id, entry, choices)
+
+            case _:
+                self._open_value_dialog(item_id, entry)
+
+
+
+        # if value_hint == '<filename>':
+        #     initial_dir = Path(self.current_options.get("--model", ".")).parent
+        #     filename =filedialog.askopenfilename(
+        #         title="Select the model file",
+        #         # initialdir=".",
+        #         initialdir=initial_dir,
+        #         filetypes=[
+        #             ("GGUF files", "*.gguf"),
+        #             ("Text files", "*.txt"),
+        #             ("All files", "*.*"),
+        #         ]
+        #     )
+        #     if filename:
+        #         entry["value"] = filename
+        #         self._refresh_item(item_id, entry)
+        #         self._update_changed_label()
+        # elif choices:
+        #     self._open_choice_dialog(item_id, entry, choices)
+        # else:
+        #     self._open_value_dialog(item_id, entry)
 
     def _open_value_dialog(self, item_id: str, entry: dict[str, Any]) -> None:
         primary = entry.get("primary", "")
