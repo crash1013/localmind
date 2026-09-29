@@ -48,6 +48,7 @@ class LMSettings(BaseModel):
     host: str
     port: int = Field(ge=1, le=65535)
     gpu_layers: str
+    use_mmproj: bool = False
 
     @field_validator("llama_exe_path", mode="before")
     @classmethod
@@ -148,7 +149,8 @@ class LocalMindSettings:
                     "context_size": 4096,
                     "host": "0.0.0.0",
                     "port": 8081,
-                    "gpu_layers": "999"
+                    "gpu_layers": "999",
+                    "use_mmproj": False
                 }, fp)
         try:
             self.settings = LMSettings.model_validate(config_data)

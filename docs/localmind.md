@@ -41,6 +41,12 @@
 * [Initializaton](./initialization.md)
 * [Build and Install llama.cpp](./llama.cpp.md)
 
+## Multimodal file support
+
+* [Using Vision](./using_vision.md)
+
+
+
 
 
 

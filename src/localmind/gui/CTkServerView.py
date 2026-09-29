@@ -13,6 +13,7 @@ from localmind.widgets.CTkYesNo import CTkYesNo
 from localmind.gui.CTkAppData import CTkAppData
 from localmind.gui.CTkAppView import CTkAppView
 from localmind.widgets.LlamaBenchSettingsDialog import LlamaBenchSettingsDialog
+from localmind.widgets.CTkYesNo import CTkYesNo
 from localmind.utils.llama_server_help_spec import HELP_SPEC
 from localmind.utils.kill_llama_servers import kill_llama_servers, get_llama_server_procs
 from localmind.gui.LocalMindSettings import LocalMindSettings, resolve_llama_executable
@@ -100,7 +101,7 @@ class CTkServerView(CTkAppView):
         self.console = ctk.CTkTextbox(self.console_frame, wrap="word", font=self.font)
         self.console.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
 
-        self.update_server_options()
+        self.update_server_options(enable_mmproj=False)
         self.show_server_options(self.server_options)
 
     def append_console(self, text: str) -> None:
@@ -135,13 +136,25 @@ class CTkServerView(CTkAppView):
         for option, value in options.items():
             self.console.insert("end", f"{option}: {value}\n")
 
-    def update_server_options(self) -> None:
+    def update_server_options(self, enable_mmproj: bool = True) -> None:
         self._settings.settings = self._settings.load_settings(str(self._settings._settings_path))
         self.server_options['--model'] = str(Path(self._settings.settings.model_path) /  Path(self._settings.settings.last_model))
         self.server_options['--ctx-size'] = self._settings.settings.context_size
         self.server_options['--host'] = self._settings.settings.host
         self.server_options['--port'] = self._settings.settings.port
         self.server_options['--gpu-layers'] = self._settings.settings.gpu_layers
+
+
+        if self.data.lm_settings and enable_mmproj and self._settings.settings.use_mmproj and hasattr(self.data.lm_settings,"find_mmproj"):
+            mmp: Path | None = self.data.lm_settings.find_mmproj(str(Path(self._settings.settings.model_path) /  Path(self._settings.settings.last_model)))
+            if mmp and Path(mmp).exists() and Path(mmp).is_file():
+                self.server_options['--mmproj'] = mmp
+                if '--ubatch-size' not in self.server_options:
+                    if CTkYesNo(self.frame, 
+                                title="Increase ubatch size?", 
+                                message="Do you want to increase the ubatch size to 2048, default setting may not work?",
+                                font=self.font).result:
+                        self.server_options['--ubatch-size'] = 2048
         if self._settings.settings.api_key:
             self.server_options['--api-key'] = self._settings.settings.api_key
         self.data.server_settings = self.server_options

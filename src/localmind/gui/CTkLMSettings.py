@@ -6,6 +6,7 @@ from tkinter import filedialog
 from localmind.gui.CTkAppData import CTkAppData
 from localmind.gui.CTkAppView import CTkAppView
 from pathlib import Path
+import os
 from logging import Logger
 
 from typing import Union, Tuple, List, Dict, Optional
@@ -70,6 +71,14 @@ class CTkLMSettings(CTkAppView):
         self.model_combo = ctk.CTkComboBox(self.model_frame, command=self.on_model_changed, font=self.font, variable=self.model_var, values=list(self.find_gguf_models(Path(self.model_path_var.get())).keys()))
         self.model_combo.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
 
+        self.model_mmproj_var = ctk.StringVar(value=str(self.find_mmproj(self.model_path_var.get() / Path(self.settings.settings.last_model))))
+        self.model_mmproj_label = ctk.CTkLabel(self.model_frame, text="MMProj:", font=self.font)
+        self.model_mmproj_label.grid(row=2, column=0, padx=10, pady=10, sticky="w")
+
+        self.model_mmproj_entry = ctk.CTkEntry(self.model_frame, font=self.font, textvariable=self.model_mmproj_var)
+        self.model_mmproj_entry.grid(row=2, column=1, padx=10, pady=10, sticky="ew")
+        self.model_mmproj_entry.configure(state="disabled")
+
         #----------------------------------------------------------------------
         self.model_config_frame = self.labeled_frame(self.frame, 
                                                            label="Model Configuration", 
@@ -91,6 +100,10 @@ class CTkLMSettings(CTkAppView):
         self.gpu_layers_var.trace_add('write', self.on_gpu_layers_changed)
         self.gpu_layers_entry = ctk.CTkEntry(self.model_config_frame, font=self.font, textvariable=self.gpu_layers_var )
         self.gpu_layers_entry.grid(row=1, column=1, padx=10, pady=10, sticky='new')
+
+        self.use_mmproj_var = ctk.BooleanVar(value=self._settings.settings.use_mmproj)
+        self.use_mmproj_check = ctk.CTkCheckBox(self.model_config_frame, text="Use MMProj", font=self.font, variable=self.use_mmproj_var, command=self.on_use_mmproj_changed)
+        self.use_mmproj_check.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky="w")
 
         #----------------------------------------------------------------------  
         self.server_settings_frame = self.labeled_frame(self.frame, 
@@ -159,6 +172,11 @@ class CTkLMSettings(CTkAppView):
                                          font=self.font,
                                          command=self.on_save_settings)
         self.save_button.grid(row=0, column=2, padx=10, pady=10, sticky='ew')
+    
+    def on_use_mmproj_changed(self, *args) -> None:
+        new_value = self.use_mmproj_var.get()
+        self._settings.settings.use_mmproj = new_value
+        self.settings_changed = True
 
     def sb_button_list(self) -> List[str]:
         """ return the list of supported button names """
@@ -275,9 +293,17 @@ class CTkLMSettings(CTkAppView):
             self._settings.settings.host = new_value
 
     def on_gpu_layers_changed(self, *args) -> None:
+        
+        def is_signed_int(value: str) -> bool:
+            try:
+                int(value)
+                return True
+            except ValueError:
+                return False
+
         self.settings_changed = True
         new_value: str = self.gpu_layers_var.get()
-        if new_value.isdigit():
+        if is_signed_int(new_value):
             self._settings.settings.gpu_layers = new_value
 
     def update_model_combo(self) -> None:
@@ -294,6 +320,9 @@ class CTkLMSettings(CTkAppView):
     def on_model_changed(self, model: str) -> None:
         self.settings_changed = True
         self._settings.settings.last_model = model
+        self.model_mmproj_entry.configure(state="normal")
+        self.model_mmproj_var.set(str(self.find_mmproj(Path(self.model_path_var.get()) / Path(model))))
+        self.model_mmproj_entry.configure(state="disabled")
 
     def on_model_path_changed(self, *args) -> None:
         path = Path(self.model_path_var.get())
@@ -308,6 +337,7 @@ class CTkLMSettings(CTkAppView):
 
         Returns:
             dict mapping display name -> full model path
+            filter mmproj files from the results
         """
         if isinstance(model_root, str):
             model_root = Path(model_root) # ensure the path is a Path
@@ -321,6 +351,8 @@ class CTkLMSettings(CTkAppView):
             key=lambda p: str(p.relative_to(model_root)).lower()
         )
 
+        model_files = [f for f in model_files if not f.stem.lower().startswith('mmproj') and not f.stem.lower().endswith('mmproj')]
+
         models: Dict[str, Path] = {}
 
         for path in model_files:
@@ -332,3 +364,53 @@ class CTkLMSettings(CTkAppView):
             models[display_name] = path
 
         return models
+
+    def find_mmproj(self, model_path: Path | str) -> Path | None:
+        """
+        Find an mmproj GGUF file in the same directory as model_path.
+
+        Returns:
+            Path to the mmproj file if exactly one suitable file is found,
+            otherwise None.
+        """
+        model_path = Path(model_path)
+
+        if not model_path.is_file():
+            return None
+
+        candidates = sorted(
+            (
+                path
+                for path in model_path.parent.glob("*.gguf")
+                if path.stem.lower().startswith("mmproj") or path.stem.lower().endswith("mmproj")
+            ),
+            key=lambda path: path.name.lower(),
+        )
+
+        match len(candidates):
+            case 0:
+                return None
+            case 1:
+                return candidates[0]
+            case _:
+                # Ambiguous — don't guess.
+                return None
+
+        
+"""    
+# --- Example Usage ---
+if __name__ == "__main__":
+
+    # Simulate a path to your base model
+    model_file = "/path/to/models/gemma-4-12b-it-Q4_K_M.gguf"
+    
+    try:
+        mmproj_path = find_matching_mmproj(model_file)
+        if mmproj_path:
+            print(f" Found matching projector: {mmproj_path}")
+        else:
+            print("❌ No valid mmproj file found matching this model.")
+    except Exception as e:
+        print(f"Error: {e}")
+
+"""
