@@ -7,6 +7,9 @@
 [The Required Directory Structure](#required-directory-structure)
 
 
+
+
+
 ## The mmproj file
 
 In llama.cpp, an mmproj file is the extra multimodal component that lets a language model understand non-text inputs such as images. The main .gguf contains the language model; the mmproj .gguf contains the machinery that converts an image into embeddings the LLM can consume. In current llama.cpp, this multimodal path is handled primarily through libmtmd.
@@ -38,6 +41,7 @@ This directory tree demonstrates the required directory structure.
 
 The mmproj file associated with the model must begin with or end with 'mmproj'.
 
+```
 models
 ├── gemma-4-12B-it
 │		 ├── **gemma-4-12B-it-Q4_K_M.gguf**
@@ -67,6 +71,8 @@ models
 │		└── mistral-7b-instruct-v0.3-q4_k_m.gguf
 └── Qwen3.5-4B
     └── Qwen3.5-4B-Q4_K_M.gguf
+	
+```
 	
 ## Configuring LocalMind to use Vision
 
