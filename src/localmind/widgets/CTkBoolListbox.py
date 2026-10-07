@@ -8,6 +8,7 @@ from typing import Optional
 class CTkBoolListbox(ctk.CTkToplevel):
 
     def is_number(self, s: str) -> bool:
+        """Check if the given string can be interpreted as a number."""
         try:
             float(s)
             return True

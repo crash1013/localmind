@@ -1,6 +1,6 @@
 # Building llama.cpp for LocalMind
 
-LocalMind can use llama.cpp builds with CPU, SYCL, or Vulkan backends.
+LocalMind can use llama.cpp builds with CPU, CUDA, SYCL, or Vulkan backends.
 
 The systems used during LocalMind development include:
 

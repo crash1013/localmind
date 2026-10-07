@@ -44,22 +44,22 @@ The mmproj file associated with the model must begin with or end with 'mmproj'.
 ```
 models
 ├── gemma-4-12B-it
-│		 ├── **gemma-4-12B-it-Q4_K_M.gguf**
-│		 └── *mmproj-gemma-4-12B-it-BF16.gguf*
+│		 ├── gemma-4-12B-it-Q4_K_M.gguf
+│		 └── mmproj-gemma-4-12B-it-BF16.gguf
 ├── gemma-4-E2B-it
-│		├── **gemma-4-E2B-it-Q4_K_M.gguf**
-│		├── **gemma-4-E2B-it-Q8_0.gguf**
-│		└── *mmproj-gemma-4-E2B-it-BF16.gguf*
+│		├── gemma-4-E2B-it-Q4_K_M.gguf
+│		├── gemma-4-E2B-it-Q8_0.gguf
+│		└── mmproj-gemma-4-E2B-it-BF16.gguf
 ├── gemma-4-E2B-it-QAT
-│		├── **gemma-4-E2B-it-QAT-Q4_0.gguf**
-│		└── *mmproj-gemma-4-E2B-it-QAT-BF16.gguf*
+│		├── gemma-4-E2B-it-QAT-Q4_0.gguf**
+│		└── mmproj-gemma-4-E2B-it-QAT-BF16.gguf
 ├── gemma-4-E4B-it
-│		├── **gemma-4-E4B-it-Q4_K_M.gguf**
-│		├── **gemma-4-E4B-it-Q8_0.gguf**
-│		└── *mmproj-gemma-4-E4B-it-BF16.gguf*
+│		├── gemma-4-E4B-it-Q4_K_M.gguf
+│		├── gemma-4-E4B-it-Q8_0.gguf
+│		└── mmproj-gemma-4-E4B-it-BF16.gguf
 ├── gemma-4-E4B-it-QAT
-│		├── **gemma-4-E4B-it-QAT-Q4_0.gguf**
-│		└── *mmproj-gemma-4-E4B-it-QAT-BF16.gguf*
+│		├── gemma-4-E4B-it-QAT-Q4_0.gguf
+│		└── mmproj-gemma-4-E4B-it-QAT-BF16.gguf
 ├── granite-4.1-3b
 │		├── granite-4.1-3b-Q4_K_M.gguf
 │		└── granite-4.1-3b-Q8_0.gguf
