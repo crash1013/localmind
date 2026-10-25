@@ -2,16 +2,19 @@
 
 import customtkinter as ctk # type: ignore
 import tkinter as tk
+import time
 import copy
 from datetime import datetime
 import socket
 
 from localmind.widgets.CTkYesNo import CTkYesNo
 from localmind.widgets.LlamaBenchSettingsDialog import LlamaBenchSettingsDialog
+from localmind.widgets.CTkBoolListbox import CTkBoolListbox
 
 from localmind.gui.CTkAppData import CTkAppData
 
 from localmind.gui.CTkAppView import CTkAppView, FontSpec
+from localmind.gui.CTkLMSettings import CTkLMSettings
 
 from localmind.utils.LlamaBenchmarkData import LlamaBenchmarkData, parse_results, LlamaBenchModelInfo, LlamaBenchRunInfo, LlamaBenchResult
 from localmind.utils.kill_llama_servers import kill_llama_servers, get_llama_server_procs
@@ -84,6 +87,14 @@ class CTkBenchmarkView(CTkAppView):
         self.end_time: datetime | None = None
         self.last_benchmark_command: list[str] | None = None
 
+        # Batch run related state
+        self.batch_running: bool = False
+        self.selected_models: list[str] = []
+        self.selected_model_index: int = 0
+        self.current_model: Path | None = None
+        self.last_running_state: bool = False
+        self.batch_cooldown_delay: float = 5.0
+
         self.initialize_widgets()
 
     def get_connection_string(self, database: Optional[str] = None) -> str:
@@ -106,7 +117,8 @@ class CTkBenchmarkView(CTkAppView):
                 'first', # start
                 'last',  # stop
                 'edit',  # edit the settings for the current filter, GPU/MODEL/BACKEND
-                'new'    # clear the graph
+                'new',   # clear the output widget
+                'next'   # batch run
                 ]
 
 
@@ -120,15 +132,19 @@ class CTkBenchmarkView(CTkAppView):
             "first": "Start",
             "last": "Stop",
             "edit": "Parameters",
-            "new": "Clear"
+            "new": "Clear",
+            "next": "Batch"
         })
-        if self.run_button is not None and self.stop_button is not None:
+        if self.run_button is not None and self.stop_button is not None and self.next_button is not None:
             if self.benchmark_running:
                 self.run_button.configure(state="disabled")
                 self.stop_button.configure(state="normal")
+                self.next_button.configure(state="disabled")
+
             else:
                 self.run_button.configure(state="normal")
                 self.stop_button.configure(state="disabled")
+                self.next_button.configure(state="normal")
     
 
     def initialize_widgets(self) -> None:
@@ -137,6 +153,7 @@ class CTkBenchmarkView(CTkAppView):
         self.stop_button: ctk.CTkButton | None = self.data.get_button('last')
         self.clear_button: ctk.CTkButton | None = self.data.get_button('new')
         self.edit_button: ctk.CTkButton | None = self.data.get_button('edit')
+        self.next_button: ctk.CTkButton | None = self.data.get_button('next')
 
         # relabel the sidebar buttons to Start and Stop and enable them
         if self.run_button is not None:
@@ -151,6 +168,8 @@ class CTkBenchmarkView(CTkAppView):
             self.clear_button.configure(text='Clear')
         if self.edit_button is not None:
             self.edit_button.configure(text='Parameters')
+        if self.next_button is not None:
+            self.next_button.configure(text='Batch')
 
         self.frame.grid_columnconfigure(0, weight=1)
         self.frame.grid_rowconfigure(3, weight=1)
@@ -209,14 +228,35 @@ class CTkBenchmarkView(CTkAppView):
         """
         self.update_benchmark_summary()
 
-    def append_console(self, text: str) -> None:
-        self.console.insert("end", text)
-        self.console.see("end")
-
     def set_server_running(self, running: bool) -> None:
-        if self.run_button is not None and self.stop_button is not None:
+        if self.run_button is not None and self.stop_button is not None and self.next_button is not None:
             self.run_button.configure(state="disabled" if running else "normal")
             self.stop_button.configure(state="normal" if running else "disabled")
+            self.next_button.configure(state="normal" if running else "disabled")
+
+    def batch_run_benchmark(self) -> None:
+        if self.benchmark_running:
+            return
+        all_models = CTkLMSettings.find_gguf_models(Path(self.lm_server_settings.settings.model_path), logger=self.data.logger)
+        self.selected_models = CTkBoolListbox(self.parent, title='Select Models', items=list(all_models.keys()), font=self.font).selected_items
+        if not self.selected_models:
+            return
+        self.batch_running = True
+        if self.benchmark_options is None:
+            self.benchmark_options = {}
+        self.benchmark_options['--output'] = 'json'
+        
+        self.selected_model_index = 0
+        self.batch_running = True
+        self.current_model = Path(self.lm_server_settings.settings.model_path) / self.selected_models[self.selected_model_index]
+        self.last_running_state = self.benchmark_running
+        self.benchmark_options['--model'] = self.current_model
+
+        self.append_benchmark_output("Starting batch benchmark run...\n")
+
+        self.append_benchmark_output(f"Current model for benchmarking: {self.current_model}\n")
+
+        self.run_benchmark()
 
     def run_benchmark(self) -> None:
         if self.benchmark_running:
@@ -228,14 +268,14 @@ class CTkBenchmarkView(CTkAppView):
                               message=f"Found {len(running_servers)} running llama-server processes. Do you want to terminate them?", 
                               font=self.font)
             if yes_no.result is False:
-                self.append_console("User chose not to terminate running llama-server processes. Aborting benchmark start.\n")
+                self.append_benchmark_output("User chose not to terminate running llama-server processes. Aborting benchmark start.\n")
                 return 
-            self.append_console(f"Found {len(running_servers)} running llama-server processes. Attempting to terminate them...\n")
+            self.append_benchmark_output(f"Found {len(running_servers)} running llama-server processes. Attempting to terminate them...\n")
             pids = kill_llama_servers(logger=self.data.logger)
             if pids:
-                self.append_console(f"Terminated llama-server processes: {pids}\n")
+                self.append_benchmark_output(f"Terminated llama-server processes: {pids}\n")
             else:
-                self.append_console("No running llama-server processes found.\n")
+                self.append_benchmark_output("No running llama-server processes found.\n")
         
         self.lm_server_settings = LocalMindSettings(app_name=self.data._app_name if self.data._app_name is not None else "LocalMind",
                                                               logger=self.data.logger)
@@ -269,6 +309,7 @@ class CTkBenchmarkView(CTkAppView):
         self.console.insert(tk.END, text)
         self.console.see(tk.END)
         self.console.configure(state="disabled")
+        self.console.update_idletasks()
 
     def _benchmark_worker(self, cmd: list[str]) -> None:
         try:
@@ -307,7 +348,7 @@ class CTkBenchmarkView(CTkAppView):
         self.benchmark_running = False
         self.benchmark_process = None
         self.set_benchmark_buttons_running(False)
-
+        self.console.update_idletasks()
         def extract_json_from_llama_output(output: str) -> str:
             """
             Extract the first valid JSON array or object from llama-bench output,
@@ -332,6 +373,7 @@ class CTkBenchmarkView(CTkAppView):
                
         if return_code == 0:
             self.append_benchmark_output("\n[Benchmark completed successfully]\n")
+            self.console.update_idletasks()
             raw = extract_json_from_llama_output(self.benchmark_output)
             self.llama_bench_results = parse_results(raw)
             self.data.logger.debug(f"results: {self.llama_bench_results}")
@@ -340,6 +382,21 @@ class CTkBenchmarkView(CTkAppView):
                 self.save_llama_bench_results(self.llama_bench_results)
         else:
             self.append_benchmark_output(f"\n[Benchmark exited with code {return_code}]\n")
+
+        if self.batch_running:
+            self.selected_model_index += 1
+            if self.benchmark_options is None:
+                self.benchmark_options = {}
+            self.benchmark_options['--output'] = 'json'
+
+            if self.selected_model_index < len(self.selected_models):
+                self.current_model = Path(self.lm_server_settings.settings.model_path) / self.selected_models[self.selected_model_index]
+                self.benchmark_options['--model'] = self.current_model
+                time.sleep(self.batch_cooldown_delay)
+                self.run_benchmark()
+            else:
+                self.batch_running = False
+                self.append_benchmark_output("[Batch benchmarking completed]\n")
 
     def save_llama_bench_results(self, results: list[LlamaBenchResult] | None) -> None:
         if not results:
@@ -763,10 +820,11 @@ class CTkBenchmarkView(CTkAppView):
         self.settings_textbox.configure(state="disabled")
 
     def set_benchmark_buttons_running(self, running: bool) -> None:
-        if self.run_button is not None and self.stop_button is not None and self.edit_button is not None:
+        if self.run_button is not None and self.stop_button is not None and self.edit_button is not None and self.next_button is not None:
             self.run_button.configure(state="disabled" if running else "normal")
             self.stop_button.configure(state="normal" if running else "disabled")
             self.edit_button.configure(state="disabled" if running else "normal")       
+            self.next_button.configure(state="disabled" if running else "normal")
 
     def on_sidebar_edit(self) -> None:
         if self.data.benchmark_settings is None or "--output" not in self.data.benchmark_settings or self.data.benchmark_settings["--output"] != "json":
@@ -823,4 +881,9 @@ class CTkBenchmarkView(CTkAppView):
     def on_sidebar_last(self) -> None:
         "Stop the server"
         self.stop_benchmark()
+        return None
+
+    def on_sidebar_next(self) -> None:
+        """Batch run the benchmark"""
+        self.batch_run_benchmark()
         return None

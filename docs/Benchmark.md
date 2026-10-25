@@ -1,6 +1,19 @@
 # Benchmark Tab
 The Benchmark tab is used to benchmark models and backends using the llama-bench command. By default the model and the benchmark setting `--output json` are the only selected options. You should select a valid model because it is likely that the default model is unavailable. Any benchmark setting may be changed and used with the selected model. The LlamaBenchSettingsDialog dialog is shared between the server and the benchmark tabs. 
 The backend that is selected in LMSettings Executable Path is used to launch llama-bench. This setting can only be changed in the LMSetting tab.
+You can run all or any of the models in you model directory using the 'Batch' button. 
+
+## Table of Contents
+
+| **Section** | **Description** | **Link** |
+| :----------- | :-------------- | :------- |
+| *Benchmark Settings* | Selecting model and options for the benchmark run | [The Benchmark Settings Dialog](#the-benchmark-settings-dialog) |
+| *Benchmark Overview* | Benchmark output explanation. | [Benchmark Overview](#benchmark-overview) |
+| *Database implementation* | Database implementation details. | [Database implementation](#database-implementation) |
+| *Benchmark Batch Mode* | Batch mode explanation | [Benchmark Batch Mode](#benchmark-batch-mode) |
+| *Benchmark Tab Screen* | Screen snbips of the benchmark tab | [Benchmark Tab Screen Snips](#benchmark-tab-screen) |
+
+[Table of Contents](#table-of-contents)
 
 **Sidebar Buttons**
 
@@ -10,6 +23,7 @@ The backend that is selected in LMSettings Executable Path is used to launch lla
 | Stop | Ends the current benchmark in progress |
 | Parameters | Click this button to open the benchmark settings dialog.<br>This is where the model is selected and any additional command line arguments to be used for the benchmark|
 | Clear | Click this button to clear the llama-bench Output console. |
+| Batch | Click the button to select and benchmark multiple models. |
 
 ** The Benchmark Settings Dialog **
 
@@ -20,7 +34,9 @@ The backend that is selected in LMSettings Executable Path is used to launch lla
 
 ![Benchmark Settings](./images/benchmark-settings.png)
 
-## Overview
+[Table of Contents](#table-of-contents)
+
+## Benchmark Overview
 
 The benchmark application illama-bench producses two test records for each benchmark, one for prompt and one for generation. The tokens per second for these two test vary significantly.
 
@@ -122,6 +138,7 @@ The benchmark application illama-bench producses two test records for each bench
 ]
 
 ```
+[Table of Contents](#table-of-contents)
 
 ## Database implementation
 
@@ -409,8 +426,34 @@ The following python code is used to initialize the selected database.
                 pass
 
 ```
+[Table of Contents](#table-of-contents)
 
+## Benchmark Batch Mode
 
+The batch mode allows you to run multiple models without needing to select and run each one individually.
+
+- Click the Batch button to start a batch run.
+
+![The batch button](./images/batch-start.png)
+
+- Select the models you want to use in this batch operation.
+
+![Batch model selection](./images/batch-model-selection.png)
+
+Once the models are selected and you click the Ok button the batch mode benchmark begins. You can see the status updated in the llama-bench output window while the batch is running.
+When all the selected models have been benchmarked you will see the 'Batch benchmarking completed' message in the llama-bench output.
+
+![Batch Complete](./images/batch-done.png)
+
+### Benchmark batch cool down delay
+
+In order to minimize stress on your GPU there is a timed delay. The time is maintainedin a variable named `batch_cooldown_delay`. The variable is initialized in CTkBenchmarkView __init__ function. The default setting is 5.0 seconds. If you need to change this it can be modified in the __init__ function.
+
+```python
+   self.batch_cooldown_delay: float = 5.0
+```
+
+[Table of Contents](#table-of-contents)
 
 ## Benchmark Tab Screen
 

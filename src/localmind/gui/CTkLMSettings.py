@@ -331,7 +331,8 @@ class CTkLMSettings(CTkAppView):
             self._settings.settings.model_path = str(path)
             self.update_model_combo()
 
-    def find_gguf_models(self, model_root: Path | str) -> Dict[str, Path]:
+    @classmethod
+    def find_gguf_models(cls, model_root: Path | str, logger: Logger | None = None) -> Dict[str, Path]:
         """
         Recursively find .gguf files under model_root.
 
@@ -342,8 +343,8 @@ class CTkLMSettings(CTkAppView):
         if isinstance(model_root, str):
             model_root = Path(model_root) # ensure the path is a Path
         if not model_root.exists() or not model_root.is_dir():
-            if isinstance(self.data.logger, Logger):
-                self.data.logger.debug(f"model_root: '{str(model_root)}' does not exist or is not a directory")
+            if isinstance(logger, Logger):
+                logger.debug(f"model_root: '{str(model_root)}' does not exist or is not a directory")
             return {}
 
         model_files: list[Path] = sorted(

@@ -28,6 +28,7 @@ class CTkBoolListbox(ctk.CTkToplevel):
         else:
             self.items = items
         self.selected_items = selected_items
+        self.checkbuttons: list[ctk.CTkCheckBox] = []
         self.initialize_widgets()
 
     def _fit_list_width(self) -> None:
@@ -105,6 +106,22 @@ class CTkBoolListbox(ctk.CTkToplevel):
         self.cancel_button.pack(
             side='left', padx=10, pady=10)
 
+        self.reset_button = ctk.CTkButton(
+            self.button_frame,
+            text="Reset All",
+            command=self.reset_clicked,
+            font=self.font)
+        self.reset_button.pack(
+            side='left', padx=10, pady=10)
+        
+        self.set_button = ctk.CTkButton(
+            self.button_frame,
+            text="Set All",
+            command=self.set_clicked,
+            font=self.font)
+        self.set_button.pack(
+            side='left', padx=10, pady=10)
+        
         self._fit_list_width()
         self.center_on_parent(self.parent)
 
@@ -114,6 +131,20 @@ class CTkBoolListbox(ctk.CTkToplevel):
         self.wait_visibility()
         self.grab_set()
         self.wait_window(self)
+
+    def reset_clicked(self) -> None:
+        """ reset the selected items to the initial state (unselect all) """
+        self.selected_items = []
+        for var in self.vars:
+            var.set(False)
+        self.update_idletasks()
+
+    def set_clicked(self) -> None:
+        """ set the selected items to the current selection (select all)"""
+        self.selected_items = self.items.copy()
+        for var in self.vars:
+            var.set(True)
+        self.update_idletasks()
 
     def focus_on_first_checkbox(self) -> None:
         if self.checkbuttons:
